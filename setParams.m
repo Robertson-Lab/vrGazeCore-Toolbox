@@ -39,7 +39,7 @@ scriptVersion = '0.1.5'; % don't change unless updating version
     end
 
     % Heatmapping Options
-    heatmapTimesteps = [4]; % how many time segments to divide scene into
+    heatmapTimesteps = [1]; % how many time segments to divide scene into
 
     % Scene Parameter
     sceneLength = 16; % scene duration in seconds
@@ -62,7 +62,7 @@ scriptVersion = '0.1.5'; % don't change unless updating version
         % this means par1 exclude 3 scenes. pars2+3 exclude none. par4 exclude only scene05   %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    ignoreList = {'repeats', 'fixate*'}; % anything in scene directory that should be ignored for all subjects (e.g., subfolders)  
+    ignoreList = {'fixate*'}; % anything in scene directory that should be ignored for all subjects (e.g., subfolders)  
 
     % Load scenes based on the sceneDir (make sceneList)
     d = dir(sprintf(paths.projectStimDir));%list directory where live
@@ -73,7 +73,7 @@ scriptVersion = '0.1.5'; % don't change unless updating version
         sceneList = [sceneList ; string(sceneName)];%record the current scene to the list of scenes
     end
 
-    junkSceneList = {'recalibrate', 'endTrial'}; % need to check if this can be merged with ignoreList
+    junkSceneList = {'endTrial'}; % need to check if this can be merged with ignoreList
 
 %% Eyetracking options
         gazeType = 0; %Default 0 (2D tracking), 3D = 1  
@@ -87,7 +87,7 @@ scriptVersion = '0.1.5'; % don't change unless updating version
     % Locked Head to center?
         headLocked = 0; % default 0. If this is 1, sets all head direction to straight ahead. Do this if your data was head locked
     % Confidence Filter
-        minConfThresh = 0.25; %Default 0.5; Data with lower than this pupil confidence value will be discarded by confidenceFilter; default for old pupil should be around 0.6 but with new pupil version, lower like 0.25
+        minConfThresh = 0.25; %Default 0.25; Data with lower than this pupil confidence value will be discarded by confidenceFilter; default for old pupil should be around 0.6 but with new pupil version, lower like 0.25
         maxConfPercent = 75; %Default 75; If more than 75% of the data is discarded due to confidence, skip the scene
     % Eccentricity Filter
         eccFiltX = 100; %set the max eccentricty in the x dimension that will be analyzed (gaze points falling farther than +/- eccFiltX/2 will be discarded)
@@ -98,7 +98,7 @@ scriptVersion = '0.1.5'; % don't change unless updating version
     % Smoothing
         useSmoothing = 0; % default 0. if 1, use Matt's smoothing. Not exactly fully implemented at the moment but could be easily. [DP: figure out where smoothing is]
         useInterpolation = 0; % default 0, if 1 use linear interpolation (Wass 2012) to recover data loss samples < 100ms 
-        durationForInterpolation = 0.15; %using 100ms
+        durationForInterpolation = 0.10; %using 100ms
     % Fixation Calculation
         % based on Mean Absolute Deviation in degrees/sec
         fixType = 1; % type of fixation to calculate, 1 = gaze fixation, 2 = head fixation  
