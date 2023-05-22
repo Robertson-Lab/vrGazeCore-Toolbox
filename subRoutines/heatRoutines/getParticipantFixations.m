@@ -1,6 +1,6 @@
 function [fixationStartTimes, fixationEquiX, fixationEquiY, fixationDurations] = getParticipantFixations(subjectName, currentScene, fileID, paths, params)
 
-%         subjectName = char (inputSubjects(parIndex,:) ); % get subject name
+
     dirCurrentScene = dir([paths.projectFixMatDir '/' subjectName '/' currentScene '*.mat']);
 
     % for the current subject, return x,y coordinates on the equirectangular 

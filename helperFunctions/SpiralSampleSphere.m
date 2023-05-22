@@ -1,4 +1,4 @@
-function [sph,Tri]=SpiralSampleSphere(N,vis)
+function [sph,Tri]=spiralSampleSphere(N,vis)
 % Produce an approximately uniform sampling of a unit sphere using a spiral
 % method [1]. According to this approach particle (i.e., sample) longitudes 
 % are proportional to particle rank (1 to N) and latitudes are assigned to

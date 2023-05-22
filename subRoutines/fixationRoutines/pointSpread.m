@@ -38,12 +38,4 @@ end
 
 
 
-
-
-
-%fprintf(fileID,'ECCENTRICITY FILTER: removed %d out of %d values (%.2f %%)\n', ecc, dsL, ecc/dsL);
-%fprintf('ECCENTRICITY FILTER: removed %d out of %d values (%.2f %%)\n', ecc, dsL, ecc/dsL);
-
-
-
 end

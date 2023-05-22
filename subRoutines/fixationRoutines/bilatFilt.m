@@ -1,8 +1,3 @@
-%% DP's Notes:
-%  PURPOSE: applies bilateral filter to time series of gaze coordinates for smoothing purposes
-%  INPUTS: time series of x & y coordinates and window for smoothing
-%  OUTPUTS: structures with absolute velocity and acceleration
-
 function [J,v,a,n]=bilatFilt(x,y,t,nr,ss,sr,di)
 %
 %[J, v, a, n] = bilatFilt(x, y, t, nr, ss, sr, di)
@@ -41,7 +36,8 @@ v.r=sqrt(v.x.^2+v.y.^2);
 a.x=diff(x,2)./diff(t,2);
 a.y=diff(y,2)./diff(t,2);
 a.r=sqrt(a.x.^2+a.y.^2);
-a.r(a.r>1e4)=1e4;                                                           %Acceleration is impressively noisy, this mitigates crazy values, mainly for visualization purposes to keep the axes reasonable
+a.r(a.r>1e4)=1e4;                                                           
+%Acceleration is impressively noisy, this mitigates crazy values, mainly for visualization purposes to keep the axes reasonable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -80,16 +76,6 @@ for i=n.r+1:n.s-n.r
 
 end
 
-% Matt's original bilateral filter code
-%
-% for i=n.r+1:n.s-n.r
-%     p=i+(-n.r:n.r); 
-%     f=exp(-(p-i).^2/(2*s.s^2));
-%     g=exp(-(x(p)-x(i)).^2/(2*s.r^2));
-%     J.x(i)=sum(f.*g.*x(p))/sum(f.*g);
-%     g=exp(-(y(p)-y(i)).^2/(2*s.r^2));
-%     J.y(i)=sum(f.*g.*y(p))/sum(f.*g);
-% end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 

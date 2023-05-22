@@ -2,7 +2,8 @@ function [paths] = loadSubjectPaths(inputSubject,paths,params)
 
 %fixation directory
 subjectFixMatDir = [paths.projectFixMatDir inputSubject '/'];
-subjectFixPlotsDir = [paths.projectFixPlotsDir inputSubject '/'];
+subjectFixPlotsDir = [paths.projectFixPlotsDir inputSubject '/']; 
+    subjectMADPlotsDir = [subjectFixPlotsDir 'plotsMAD/' ]; 
 %saccade directory
 %subjectSaccadeDir = [paths.projectSaccadeDataDir inputSubject '/'];
 %heatmaps
@@ -15,6 +16,7 @@ subjectHeatPlotsDir = [paths.projectHeatPlotsDir inputSubject '/']; %heatmap plo
 subPathsList = {
     'subjectFixMatDir';
     'subjectFixPlotsDir'
+    'subjectMADPlotsDir';
     %'subjectSaccadeDir';
     'subjectHeatMatDir';
     'subjectHeatPlotsDir';

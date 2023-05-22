@@ -27,18 +27,14 @@ function [mean_fix_yaw,mean_fix_pitch,fix_duration,length_fix,start_time, end_ti
 %   - begin_fix_idx = start idx of a fixation
 %   - end_fix_idx = end idx of a fixation
 %   - mean_fix_gaze_ecc = matrix of mean gaze ecc for each fixation (how from viewport center was the fix point)
-
-% tlb adding these - will probably want to clean this
 %   - yaw_sphere = yaw with interpolated samples replaced by  gaze centroid
 %   - pitch_sphere = pitch with interpolated samples replaced by gaze centroid
 
 
 % Also exports fixations as .mat file for the current subject
-% generalize this function so that it can be used for gaze (still), head,
-% eye
-%
-% TLB 4-25-19 changing variable names, commenting, and QC-ing script
-%  JSM note to add!!! - write out another column that is fixation Index
+% generalize this function so that it can be used for gaze (still), head,eye
+
+%  TODO: write out another column that is fixation Index
 
 %% Distance Calculation (orthodromic)
 %computes the lengths, arclen, of the great circle arcs connecting pairs of points on the surface of a sphere.
@@ -91,20 +87,24 @@ for i = startSWIdx:endSWIdx
 
 end
 
+% plot x position, y position, velocity, and MAD over time
+if params.plotMADFlag == 1
+    plotMAD(gazeX_deg,gazeY_deg,vel,madVel,time,swTime,endSWIdx,subjectName,currentSceneText,paths,params)
+end
+
 %% Calculate the Fixations!
-%%%%% Windows with a MAD less than x deg/s were classified as potential fixations,jsm - I got help from here: https://www.mathworks.com/matlabcentral/answers/224769-how-to-get-the-starting-and-ending-index-of-repeated-numbers-in-an-array
+%%%%% Windows with a MAD less than x deg/s were classified as potential fixations
 % Identify potential fixations and saccades
 
-% ARM - figure out how to add fixSpatialDist and fixTempDist to coreParams. figure out how to reference those variables here
 switch params.fixType
     case 1 % GAZE FIXATIONS - if we want to calculate gaze fixation use madVel
         fixCalcData = madVel(startSWIdx+1:end); %remove points not included in the mad sliding window
-        fixSpatialDist = 2; % if fixations are within this # of deg, group together
-        fixTempDist = 0.15; % if fixations are within fixTimeLimit of each other group togethewr
+        fixSpatialDist = params.fixSpatialDist; % if fixations are within this # of deg, group together
+        fixTempDist = params.fixTempDist; % if fixations are within fixTempDist of each other group togethewr
     case 2 % HEAD FIXATIONS - if we want to calculate head fixation, use velocity
         fixCalcData = vel;
-        fixSpatialDist = 2;
-        fixTempDist = 0.10;
+        fixSpatialDist = params.fixSpatialDist;
+        fixTempDist = params.fixTempDist;
 end
 
 potential_fixations = find(fixCalcData<params.minMad);%find a list of MAD idxs of potential fixations
@@ -115,7 +115,7 @@ potential_fix_diff=diff(potential_fixations);%equal to 1 when consecutive, >1 wh
 % find all non-consecutive potential fixes, will be potential_fix_diff will be > 1 when changing b/w two discrete gaze points
 potential_fix_start= [1 ; (potential_fix_diff > 1)]; % first point is always a fix start, add 1 to beginning
 
-for i = 1:length(potential_fix_start)-1 % tlb building a custom difference function to find the end fixation point
+for i = 1:length(potential_fix_start)-1 %build a custom difference function to find the end fixation point
     % if the next point is not neighboring, the point will have a value one
     if (potential_fix_start(i+1) > 0 || potential_fix_start(i) > 0)
          %a fix start followed by a neighboring pt will have a value of -1
@@ -127,7 +127,6 @@ for i = 1:length(potential_fix_start)-1 % tlb building a custom difference funct
     end
 end
 
-%potential_fix_end = diff([1 ; potential_fix_diff]) > 0; % first point can never truly be the end of a fixation
 begin_fix_idx= potential_fixations(find(potential_fix_start.'));%find beginning of each group, 'saccades', add 1 at beginning b/c first point is always beginning a fixation
 end_fix_idx= potential_fixations(find([potential_fix_end.',true]));%find end of each group
 length_fix=1+end_fix_idx-begin_fix_idx;%find length of each group
@@ -148,31 +147,25 @@ removedIdxs = removedIdxs(2:end); % adjust the matrix containing which samples a
 
 for i=1:length(begin_fix_idx)
     
-    %tlb adding this because i don't think we truly want to consider interpolated samples for calculating fixations
+    %exclude interpolated samples from fixation calculations
 
     currentPitchList = pitch_sphere(begin_fix_idx(i):end_fix_idx(i)); % yaw points from start of fix event to end of fix event
     currentYawList = yaw_sphere(begin_fix_idx(i):end_fix_idx(i)); % pitch points from start of fix event to end of fix event
+    
+    try 
+        validIdxs = find(removedIdxs(begin_fix_idx(i):end_fix_idx(i))==0); % find idxs of current valid samples
+        invalidIdxs = find(removedIdxs(begin_fix_idx(i):end_fix_idx(i))==1);
 
-    if params.unityProjectVersion == 1
-        try 
-            validIdxs = find(removedIdxs(begin_fix_idx(i):end_fix_idx(i))==0); % find idxs of current valid samples
-            invalidIdxs = find(removedIdxs(begin_fix_idx(i):end_fix_idx(i))==1);
+        [mean_fix_pitch(i),mean_fix_yaw(i)] = meanm(currentPitchList(validIdxs),currentYawList(validIdxs)); % mean pitch & yaw of the fix event
 
-            [mean_fix_pitch(i),mean_fix_yaw(i)] = meanm(currentPitchList(validIdxs),currentYawList(validIdxs)); % mean pitch & yaw of the fix event
-
-            if ~isempty(invalidIdxs) % if there are idxs that were from interpolation
-                invalidIdxs = invalidIdxs + begin_fix_idx(i) - 1; % shift the idxs into alignment with the gaze coords
-            end
-
-            pitch_sphere(invalidIdxs) = mean_fix_pitch(i); % then assign the interpolated samples the mean gaze centroid
-            yaw_sphere(invalidIdxs) = mean_fix_yaw(i);
-        catch
-            [mean_fix_pitch(i),mean_fix_yaw(i)] = meanm(currentPitchList,currentYawList); % mean pitch & yaw of the fix event
+        if ~isempty(invalidIdxs) % if there are idxs that were from interpolation
+            invalidIdxs = invalidIdxs + begin_fix_idx(i) - 1; % shift the idxs into alignment with the gaze coords
         end
-    else
-        
-        [mean_fix_pitch(i),mean_fix_yaw(i)] = meanm(currentPitchList,currentYawList); % mean pitch & yaw of the fix event
 
+        pitch_sphere(invalidIdxs) = mean_fix_pitch(i); % then assign the interpolated samples the mean gaze centroid
+        yaw_sphere(invalidIdxs) = mean_fix_yaw(i);
+    catch
+        [mean_fix_pitch(i),mean_fix_yaw(i)] = meanm(currentPitchList,currentYawList); % mean pitch & yaw of the fix event
     end
 
     start_time(i) = time(begin_fix_idx(i)); % time at which a fix event began
@@ -188,8 +181,7 @@ potential_fix_count = length(begin_fix_idx);
 % invalid samples (150 ms) were concatenated if they were displaced by less than 1 deg
 % with invalid samples assigned the mean position of the preceding potential fixation
 
-%tlb 8-29-19 adding in method to account for invalid samples --> assigning
-%mean position of preceding sample
+%method to account for invalid samples --> assigning mean position of preceding sample
 
 concatenate = [];
 concount = 0;
@@ -205,7 +197,7 @@ for i=1:length(begin_fix_idx)-1
 %     %removedIdxs(removeCount,1) >= end_fix_idx(i) && removedIdxs(removeCount,1) < begin_fix_idx(i+1) &&
     
     [dist_degrees,d_az] = distance(mean_fix_yaw(i),mean_fix_pitch(i), mean_fix_yaw(i+1), mean_fix_pitch(i+1)); %find distance between fixation i and i+1 (arclen degrees)
-    if start_time(i+1)-end_time(i) < fixTempDist && dist_degrees < fixSpatialDist %% should base this on our accuracy?
+    if start_time(i+1)-end_time(i) < fixTempDist && dist_degrees < fixSpatialDist %% TODO: should base this on our accuracy
         concatenate(i) = 1;
     else
         concatenate(i) = 0;
@@ -233,7 +225,7 @@ while i<=length(concatenate) %consider the last point!
 
 end
 % log concatenation results.
-if params.fixType == 1 % only want to do this for eye fix? tlb solve later
+if params.fixType == 1 % 
     fprintf(fileID,'GAZE CONCATENATION: concatenated %d out of %d potential fixations\n', concount, potential_fix_count);
     fprintf('GAZE CONCATENATION: concatenated %d out of %d potential fixations\n', concount, potential_fix_count);
 end
@@ -242,7 +234,7 @@ end
 excludeAmount = params.excludeFirstNFix + 1; % need to add 1 to get proper idx
 
 if length(begin_fix_idx) > params.excludeFirstNFix && params.fixType == 1 % make sure # of fixations is > # of wanted exclusions
-    if params.excludeFirstNFix ~=0 && ~contains(currentSceneText, '_sanityTarget') % don't exclude fixations of the sanity scene --> tlb check this
+    if params.excludeFirstNFix ~=0 && ~contains(currentSceneText, '_sanityTarget') % don't exclude fixations of the sanity scene
         mean_fix_yaw = mean_fix_yaw(excludeAmount : length(mean_fix_yaw)-params.excludeLastNFix);
         mean_fix_pitch = mean_fix_pitch(excludeAmount : length(mean_fix_pitch)-params.excludeLastNFix);
         fix_duration = fix_duration(excludeAmount : length(fix_duration)-params.excludeLastNFix);
@@ -261,40 +253,24 @@ end
 %%% they were immediately preceded and followed by a likely saccade event
 %%% (MAD of three preceding/succeeding samples greater than 100 degrees/s) AND
 %%% displaced from the mean of the preceding and succeeding potential fixations by at least 1 degree.
-
-% % %tlb 8-29-19 - then exclude same fixation from verification
-
-% tlb 8-29-19 shift back into vel space by adding in removed pts from mad
-% window
+%%% then exclude same fixation from verification
+% shift back into vel space by adding in removed pts from mad window
 % 
-% shift vel into mad space?
+% shift vel into mad space
 
 if params.fixValidation == 1
-    prefix_pt_validation = begin_fix_idx; %- (s_window/2) - 1;
-    postfix_pt_validation = end_fix_idx;%- (s_window/2) - 1;
-    params.valWindow = 2; %number of points before a fixation to check
+    prefix_pt_validation = begin_fix_idx; 
+    postfix_pt_validation = end_fix_idx;
+    val_window = params.valWindow; %number of points before a fixation to check
 
-    % time(prefix_pt_validation(3)-10:prefix_pt_validation(3))
-    % dis(prefix_pt_validation(3)-10:prefix_pt_validation(3))
-
-    % 
     for i = 2:length(begin_fix_idx)
         try
-            % going to assume this means using the mad numbers already given
+            % using the mad numbers already given
             prefix_pts(i,:) =  fixCalcData(prefix_pt_validation(i)-val_window:prefix_pt_validation(i)-1);
             postfix_pts(i,:) = fixCalcData(postfix_pt_validation(i)+1:postfix_pt_validation(i)+val_window);
-
-    %         prefix_pts(i) = mad(vel(prefix_pt_validation(i)-val_window:prefix_pt_validation(i)));
-    %         postfix_pts(i) = mad(vel(postfix_pt_validation(i):postfix_pt_validation(i)+val_window));    
-    % 
-    %         
-    %         postfix_pts(i) = mad(vel(postfix_pt_validation(4):postfix_pt_validation(4)+val_window));    
-    %         prefix_pts(i) = mad(vel(prefix_pt_validation(4)-val_window:prefix_pt_validation(4)));
         catch
 
         end
-    %     prefix_pts = mad_distance(prefix_pt_validation(i)-val_window:prefix_pt_validation(i));
-    %     postfix_pts = mad_distance(postfix_pt_validation(i):postfix_pt_validation(i)+val_window);
     end
 
 
@@ -337,20 +313,15 @@ if params.excludeFixDursLessThan ~= 0
     end_time(shortFixIdx) = [];
 end
 
-%% Calculate Mean Fixation Eccentricity %JSM CHECK THIS
+%% Calculate Mean Fixation Eccentricity
 
-if params.fixType == 1 && length(begin_fix_idx > 1)
-%     for i=1:length(begin_fix_idx)
-%         mean_fix_gaze_ecc(i) = mean(gaze_ecc(begin_fix_idx(i):end_fix_idx(i)));
-%     end
-    mean_fix_gaze_ecc = []; % initialize matrix to prevent output error 
-else
-    mean_fix_gaze_ecc = []; % initialize matrix to prevent output error 
-end
+
+mean_fix_gaze_ecc = []; % initialize matrix to prevent output error 
+
 
 
 if isnan(fix_duration)
-    h
+    error('No Duration for Fixation')
 end
 
 % TLB - checking common fixation stats
@@ -363,7 +334,6 @@ fprintf('Max Fixation Duration: %0.3f\n\n', max(fix_duration));
 %% Export Fixations
 %Gather spherical median fixations, bring back to positive domain
 if (params.fixType == 1 || params.fixType == 2) %only export this data if we are doing gaze
-    %TLB - maybe change later if we want to integrate headFixations into findFixations
     
     mean_fix_yaw = mean_fix_yaw+180;
     mean_fix_pitch = mean_fix_pitch+90;
@@ -383,27 +353,13 @@ if (params.fixType == 1 || params.fixType == 2) %only export this data if we are
     %Gather HMD raw gaze (degrees ~FoV) that corresponds to fixation times
     xHMDRaw = [];
     yHMDRaw = [];
-%     for ifix = 1:length(begin_fix_idx)
-%         for wfix = 1:length_fix(ifix)
-%             xSphereRaw = [xSphereRaw yaw_sphere(begin_fix_idx(ifix)+wfix)];
-%             ySphereRaw = [ySphereRaw pitch_sphere(begin_fix_idx(ifix)+wfix)];
-%             startRaw = [startRaw time(begin_fix_idx(ifix)+wfix)];
-%             durationRaw = [durationRaw (time(begin_fix_idx(ifix)+wfix + 1)) - time(begin_fix_idx(ifix)+wfix) ];
-%             xHMDRaw = [xHMDRaw gazeX_deg(begin_fix_idx(ifix)+wfix)];
-%             yHMDRaw = [yHMDRaw gazeY_deg(begin_fix_idx(ifix)+wfix)];
-%         end
-%     end
 
-    %JSM CHECK THIS - put hardcoded vals in parms file (including time window above)
+    %Used hardcoded vals in parms file (including time window above)
     %Gather Equirectangular median and raw fixations  %%%%%%%%%%%%%%%%%%%%
     [xEquirectMedian,yEquirectMedian] = wrapPointsEquirect( mean_fix_yaw, mean_fix_pitch, 360, 180, 0); 
     [xEquirectMedian, yEquirectMedian] = degreesToPixels(xEquirectMedian,yEquirectMedian,params.imDimX,params.imDimY);
     [xSphereRaw,ySphereRaw] = wrapPointsEquirect( xSphereRaw, ySphereRaw, 360, 180, 0); 
     [xEquirectRaw, yEquirectRaw] = degreesToPixels(xSphereRaw,ySphereRaw,params.imDimX,params.imDimY);
-    
-    % if ~exist( [paths.projectFixDataDir  subjectName '/'] )
-    %     mkdir( [paths.projectFixDataDir  subjectName '/'] );
-    % end
 
     %%Create structures  to save in .mat file
 

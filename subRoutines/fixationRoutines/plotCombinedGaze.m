@@ -16,7 +16,6 @@ function [] = plotCombinedGaze(resizeIM, yaw, pitch, subjectName, currentSceneTe
 fig = figure('visible',params.plotVisibility), imshow(resizeIM);%start a new figure
 title([subjectName currentSceneText 'rawHMDCenter']);
 
-%imshow(resizeIM) %pic_width x pic_width x 3
 hold on
 axis on;
 
@@ -25,7 +24,6 @@ for i = 1:length(eyex)
     if abs(headx(i)-eyex(i)) < 250
         line([headx(i),eyex(i)],[heady(i),eyey(i)] , 'Color','white','LineWidth',0.01),
     end
-    %line(x,y,'Color','red','LineStyle','--')
 end
 
 %% Plot Head Dir by TIME
@@ -49,8 +47,6 @@ f=getframe;
 imwrite(f.cdata,outputFilename);
 close
 %% Plot Fixations by Duration, Spread
-%figure%start a new figure
-%title([subjectName currentSceneText 'rawHMDCenter']);
 
 tempIM = imread(outputFilename);
 fig = figure('visible',params.plotVisibility), imshow(tempIM); %pic_width x pic_width x 3

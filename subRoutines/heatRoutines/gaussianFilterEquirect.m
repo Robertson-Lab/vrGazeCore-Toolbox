@@ -7,28 +7,9 @@
 
 function [imgOut] = gaussianFilterEquirect(imgIn,baseGaussWidth)
 %% Test that this works with fake fixations
-% baseGaussWidth = 200;
-% % 
-% imgIn = zeros(1000,2000);
-% % for i = 1:20
-% %     imgIn(randi(1000) ,randi(2000)) = 1;
-% % end
-% imgIn(500 ,1000) = .8;
-% imgIn(800 ,250) = .4;
-% imgIn(300 ,1300) = .3;
-% imgIn(50 ,50) = .2;
-% imgIn(999 ,1000) = .1;
-% 
-% imgIn(995 ,995) = .1;
-% imgIn(990 ,980) = .1;
-% imgIn(980 ,990) = .1;
-
-
-
 % get image H,W
 imageW = size(imgIn,2);
 imageH = size(imgIn,1);
-
 
 
 %% Pad & smooth the image - Horizontal steps: pad, variable width gaussian
@@ -47,9 +28,6 @@ for i = 1:imageH
     pitchDegrees = pitch_out-90;
     % set variable size of gaussian width based on the pitch
     variableGaussWidth = baseGaussWidth*(1/cosd(pitchDegrees));
-%     if variableGaussWidth == inf || variableGaussWidth>10000
-%         variableGaussWidth = 10000;
-%     end
     if variableGaussWidth == inf
         variableGaussWidth = 1000000;
     end
@@ -64,10 +42,6 @@ for i = 1:imageH
     [~,pitch_out] = pixelsToDegrees(i,i,imageW,imageH);
     pitchDegrees = pitch_out-90;
     variableGaussWidth = baseGaussWidth*(1/cosd(pitchDegrees));
-
-%     if variableGaussWidth == inf || variableGaussWidth>10000
-%         variableGaussWidth = 10000;
-%     end
     if variableGaussWidth == inf
         variableGaussWidth = 1000000;
     end
@@ -92,17 +66,7 @@ imgOut = imgOut(:,1+(imageW/4):end-(imageW/4));
 
 
 %% Pad & smooth the image - Vertical steps: pad, fixed width gaussian
-% We create padding out of actual image data, but first we reflect it 
-% imgInUD = flipud(imgOut);
-% imgInUDLR = fliplr(imgInUD);
-
-
-% Then we pad the top and bottom. 
-% imgCol = [ imgInUDLR' imgOut' imgInUDLR'];
-% imgCol = imgCol';
-% 
-% imgColUD = flipud(imgCol);
-% 
+% We create padding out of actual image data, but first we reflect it
 
 % make gaussian window of fixed width
 w = gausswin(baseGaussWidth);
@@ -128,7 +92,3 @@ imgOutUD = flipud( imgOutUD); % flip it back
 % unpad top and bottom here 
 imgOut = imgOutUD + imgOut;
 %imagesc(imgOut) %commented out to supress heatmap showing
-
-% maximgout = max(max(imgOut(200:800,:)));
-% 
-% imgOut(imgOut>=maximgout) = maximgout;
