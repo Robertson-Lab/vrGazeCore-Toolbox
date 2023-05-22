@@ -17,7 +17,7 @@ function [sceneHeat] = createSceneHeatmap(fixationEquiX, fixationEquiY, fixation
             fixationEquiY(i) = 1; % no zero indexing in matlab
         end
 
-        % DEEPA DOCUMENT THIS STEP
+        % TODO: DOCUMENT THIS STEP
         sceneHeat(round(fixationEquiX(i)),round(fixationEquiY(i))) = sceneHeat(round(fixationEquiX(i)),round(fixationEquiY(i)))+fixationDurations(i);
     end
 

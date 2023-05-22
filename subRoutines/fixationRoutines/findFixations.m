@@ -1,8 +1,3 @@
-%% DP's Notes:
-%  PURPOSE: to define fixations from VR eye-tracking data
-%  INPUTS: 1) participant name; 2) excluded scene strings for participant; 3) raw data file from VR eye-tracker output
-%  OUTPUTS: TBD 
-
 function findFixations(subjectName,paths,params)
 %script to define fixations following Peterson (2016), Wass (2012)
 % INPUTS: 1) participant name; 2) excluded scenes string for that participant
@@ -44,11 +39,10 @@ excludedPretrialCount = 0;
 eyeTrackerFailCount = 0;
 excludedScannedCount = 0;
 minSampleCount = 0;
-%notScannedCount = 0;
 percentScannedList = [];
 meanRawConfidenceList =  [];
 
-junkSceneList = {'cloudland', 'recalibrate', 'endTrial'};
+junkSceneList = params.junkSceneList
 % set drift correction amounts to 0 so there is at least a value for the
 % first scene
 preshiftX = 0;
@@ -77,12 +71,8 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
     end        
     
     % trim parData to only considered scenes
-    % the new unity gaze logging is different than the old version. Account for this.
-    if params.unityProjectVersion == 0 %old unity. 16p,activepass,pilots
-        parDataScene = parData(sceneChangeList(s):sceneChangeList(s+1),:);
-    elseif params.unityProjectVersion == 1 %new template tlb, emax,snapi,newer
-        parDataScene = parData((sceneChangeList(s)+1):sceneChangeList(s+1),:);
-    end
+    parDataScene = parData((sceneChangeList(s)+1):sceneChangeList(s+1),:);
+    
     
     
     timeInScene = parDataScene(end,1)-parDataScene(1,1); %find scene length (seconds)
@@ -96,10 +86,9 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
     timeList(end+1) = timeInScene; %tack on the current time to the list
     metaData.(['scene' currentSceneText]).samplesInScene = samplesInScene;
 
-%   skip manually excluded scenes (specified by excludedScenesPar in coreParams) [DP check this]
-%   junk scenes (specified line 46 in findFixations --> related to old data collection)
+%   skip manually excluded scenes & junk scenes (specified by excludedScenesPar in setParams)
 %   and scenes less than minTimeInScene
-    if any(strcmp(currentScene,junkSceneList) | timeInScene < params.minTimeInScene) % TLB need to figure out strcmp(currentScene, params.excludedScenesPar) || 
+    if any(strcmp(currentScene,junkSceneList) | timeInScene < params.minTimeInScene) 
        continue
     end
     
@@ -116,7 +105,7 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
     fprintf('Scene Duration: %.2f seconds\n', timeInScene);%log time in scene
     fprintf(fileID,'Scene FPS: %.2f frames per second\n', sceneFPS);%log fps
     fprintf('Scene FPS: %.2f frames per second\n', sceneFPS);%log fps
-    [rawSceneData] = parseRaw2struct(parDataScene,params.fovX,params.fovY,preTrialScene,params,preshiftX,preshiftY); %tlb 4-23-19 changing parData to parDataScene to only output scenedata 
+    [rawSceneData] = parseRaw2struct(parDataScene,params.fovX,params.fovY,preTrialScene,params,preshiftX,preshiftY); %only output scenedata 
     if params.scannedFilter == 1
         if preTrialScene == 0
             yawScan = parDataScene(:,3);
@@ -129,7 +118,6 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
                 excludedScannedCount = excludedScannedCount+1;
                 continue
             end
-            %notScannedCount = notScannedCount+1;
         end
     end
     
@@ -141,7 +129,7 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
 
     if params.headsetType ~= 3 %don't filter data for oculus go
         
-        %%%%%%%% TLB TESTING 2D Pre-Trial based Drift Correction 
+        %%%%%%%% 2D Pre-Trial based Drift Correction 
         % if we are not in a pre-trial and we are doing drift correction, then do it
         if preTrialScene == 0 && params.driftCorrection == 1
             parDataScene(:,5) = -preshiftX + parDataScene(:,5);
@@ -153,7 +141,7 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
             meanRawConfidenceList(end+1) = mean( parDataScene(:,7) );
         end
 
-        %tlb 8-29-19 - slightly changing filtering method to keep all data but label invalid data
+        %filtering method to keep all data but label invalid data
         %filter out values below confidence threshold
 
         [parDataScene,confidenceFlag,confidenceRemoved,confidencePercent] = confidenceFilter(parDataScene,params,fileID);
@@ -168,7 +156,7 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
             metaData.(['scene' currentSceneText]).excludedConfidence = 1; 
             metaData.(['scene' currentSceneText]).included = 0;
             lowConfidenceCount = lowConfidenceCount + 1;
-            if preTrialScene == 1  && params.excludeByPreTrial == 1 % if we are throwing out the pretrial scene for low confidence, then skpi the next real scene
+            if preTrialScene == 1  && params.excludeByPreTrial == 1 % if we are throwing out the pretrial scene for low confidence, then skip the next real scene
                 skipNextScene = 1;
             end
             continue %skip
@@ -181,12 +169,11 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
         eccentricityRemoved = ecc;
         percentRemoved;
 
-        %tlb 8-29-2019 - added invalid index column to raw scene data
+        %added invalid index column to raw scene data
         filteredData = parDataScene;
-        filteredData(filteredData(:,end) == 1, 1:end-1) = nan; %
-    %     filteredData = parDataScene(parDataScene(:,end) ~= 1,1:end-1);  % then remove rows labelled invalid by filters
+        filteredData(filteredData(:,end) == 1, 1:end-1) = nan;
     
-        %tlb just changing out variable names
+        %changing out variable names
         if length(filteredData) < params.minSamples
             fprintf(fileID,'NOT ENOUGH SAMPLES! Skipping\n');
             fprintf('NOT ENOUGH SAMPLES! Skipping\n');
@@ -242,23 +229,10 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
     if params.headsetType ~= 3
         [gaze_yaw_sphere,gaze_pitch_sphere] = rectifyGaze(gazeX_deg, roll_rad, gazeY_deg, pitch, yaw); % converts the gaze points from viewport to sphere space
 
-        % jsm fix this
         rawSceneData.gaze_yaw_sphere = gaze_yaw_sphere - 180;
         rawSceneData.gaze_pitch_sphere = gaze_pitch_sphere - 90;
 
-
-    % % % % % % % % % % % % % %        % ARM EDIT HERE TO HACKILY change the manipulations that happen to
-    % % % % % % % % % % % % % %    % gazepitchsphere and gazerawsphere
-    % % % % % % % % % % % % % %     if params.fixType == 2 
-    %         rawSceneData.rawHeadYaw = rawSceneData.rawHeadYaw + 180;
-    %         rawSceneData.rawHeadPitch = rawSceneData.rawHeadPitch + 90;
-
-    % % % % % % % % % % % % % %         rawSceneData.gaze_pitch_sphere = rawSceneData.rawHeadPitch;
-    % % % % % % % % % % % % % %     end 
-
-
-
-        %%%%%%%% WRAP POINTS %%%%%%%% TLB - can we just use wrapTo360?
+        %%%%%%%% WRAP POINTS %%%%%%%% 
         [gaze_yaw_sphere,gaze_pitch_sphere] = wrapPointsEquirect( gaze_yaw_sphere, gaze_pitch_sphere, 360, 180, 0); % don't round
     end
     
@@ -280,9 +254,8 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
         % samples from being smoothed together (which occurs when data is
         % removed instead of labelled nan).
 
-        [J, abs_vel, abs_acc, n] = bilatFilt(gaze_yaw_sphere,gaze_pitch_sphere,time,numSamples,numSamples,numSamples,0);
+        [J, abs_vel, abs_acc, n] = bilatFilt(gaze_yaw_sphere,gaze_pitch_sphere,time,numSamples,numSamples,numSamples,1);
         
-        %tlb updates 8-29-2019
         %remove nans from beginning and end of arrays that are a result of
         %the filter being bilateral (requires numSamples before and after a
         %given smoothing point).
@@ -302,104 +275,8 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
     %%%%%%%%%  INTERPOLATION  %%%%%%%%%%%%
     % Written by TLB 2019
     
-    if params.useInterpolation == 1
-        
-        validIdxs = [];
-        
-        %preserve the invalid samples (nans) as a reference array for
-        %interpolating
-        preInterpYaw = gaze_yaw_sphere;
-        preInterpPitch = gaze_pitch_sphere;
-        
-        % remove invalid samples (nans) from all fixation related data in preparation for
-        % interpolating between invalid samples
-        gaze_yaw_sphere = gaze_yaw_sphere(~isnan(gaze_yaw_sphere));
-        gaze_pitch_sphere = gaze_pitch_sphere(~isnan(gaze_pitch_sphere));
-        
-        time = time(~isnan(time));
-        gazeX_deg = gazeX_deg(~isnan(gazeX_deg));
-        gazeY_deg = gazeY_deg(~isnan(gazeY_deg));
-        gaze_ecc = gaze_ecc(~isnan(gaze_ecc));
-        confidence = confidence(~isnan(confidence));
-        
-        % these idxs refer where samples were removed from the raw data
-        removedIdxs = find(parDataScene(:,end) == 1);
-
-        
-        %find number of idxs removed previous to a point
-        try 
-            if ~isempty(removedIdxs)
-                if params.useSmoothing == 0 %if no bilateralFilter was used, we have no need to shift idxs
-                    numSamples = 0;
-                end
-                
-                %shift the rawTime (used to find the missing data b/c var
-                % "time" is filtered) by numSamples removed from beginning by bilateralFilter
-                alignRawTime = rawSceneData.rawTime(numSamples+1:end-numSamples);
-
-                idxDiff = [1 ; diff(removedIdxs)];
-                
-                %find groups of missing data by looking for differences of removed indices >1
-                %then shift indices by the number of samples removed from the beginning by bilateralFilter
-                %to align the removed idxs with the filtered data
-                startInterp = [removedIdxs(find(idxDiff > 1))] - numSamples; 
-                startInterp = [removedIdxs(1) - numSamples ; startInterp(1:end-1)];
-                
-                %repeat for finding the end of missing data --> look for
-                %the idx before a separation of missing data >1. shift for
-                %bilateral filter
-                endInterp = [removedIdxs(find(idxDiff > 1) - 1)] - numSamples; 
-
-                if isempty(endInterp) %if there is only one removed sample, endInterp will be empty
-                    endInterp = [removedIdxs(end) - numSamples];
-                end
-
-                lenInterp = []; %keep track of the length of each interpolation --> used to increment the idxs for interpolation
-
-                % in the second column, add 0's to denote valid samples
-                validIdxs = repmat(0, size(gaze_yaw_sphere,1), 1); % ones will be added where interpolations occured
-
-                for idx = 1:size(startInterp,1) % go through each possible interpolation
-
-                    if alignRawTime(endInterp(idx)) - alignRawTime(startInterp(idx)) < params.durationForInterpolation % if the amount of time is < 100ms 
-                        try
-                            % find point before and point after data was removed
-                            alignToRawIdxs = [alignRawTime(startInterp(idx)-1:endInterp(idx)+1)];
-
-                            startInterpIdx = find(ismember(time,alignToRawIdxs(1))); %find the point before the removed data in the processed data
-                            endInterpIdx = find(ismember(time,alignToRawIdxs(end))); % point after the removed data (will be the consecutive point in the filtered data)
-
-                            %because the data we are looking at is filtered, we only need the start index
-                            interpX = [gaze_yaw_sphere(startInterpIdx:endInterpIdx)]';
-                            interpY = [gaze_pitch_sphere(startInterpIdx:endInterpIdx)]';
-
-                            %time of sample before removed data, time of sample after removed data
-                            surroundTimes = [time(startInterpIdx);time(endInterpIdx)];
-
-                            interpX(isnan(interpX)) = [];
-                            interpY(isnan(interpY)) = [];
-
-                            interpXY = interp1(surroundTimes, [interpX',interpY'], alignToRawIdxs);
-
-                            %trim the values interpolated removing the reference points of valid data
-                            interpXY = interpXY(2:end-1,:);
-
-                            %then insert values into matrix of data
-                            validIdxs = [ validIdxs(1:startInterp(idx) - 1) ; repmat(1, size(interpXY,1),1) ; validIdxs(startInterp(idx):end)]; %mark where the data was inserted with a 1
-                            gaze_yaw_sphere = [ gaze_yaw_sphere(1:startInterp(idx) - 1) ; interpXY(:,1) ; gaze_yaw_sphere(startInterp(idx):end)];
-                            gaze_pitch_sphere =  [ gaze_pitch_sphere(1:startInterp(idx) - 1) ; interpXY(:,2) ; gaze_pitch_sphere(startInterp(idx):end)];
-                            time =  [ time(1:startInterp(idx) - 1) ; alignRawTime(startInterp(idx):endInterp(idx)) ; time(startInterp(idx):end)];
-
-                            lenInterp(idx) = (endInterp(idx) + 1) - startInterp(idx); % use to increment interpolation idxs after adding values
-                        catch
-                            
-                        end
-                    end
-                end   
-            end
-        catch
-            
-        end
+    if params.useInterpolation == 1        
+        [time,gazeX_deg,gazeY_deg,gaze_ecc,confidence,gaze_pitch_sphere,gaze_yaw_sphere,validIdxs,removedIdxs]=interpolSamples(gaze_yaw_sphere,gaze_pitch_sphere,time, gazeX_deg, gazeY_deg, gaze_ecc, confidence, parDataScene, rawSceneData, paths,params)
     else
         removedIdxs = [];
         
@@ -423,14 +300,7 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
     elseif params.fixType == 2 % head data 
          [mean_fix_yaw,mean_fix_pitch,fix_duration,length_fix,start_time,end_time,begin_fix,end_fix,mean_fix_gaze_ecc] = calculateFixations(removedIdxs, gazeX_deg,gazeY_deg,rawSceneData.rawHeadYaw,rawSceneData.rawHeadPitch,rawSceneData.rawTime,gaze_ecc,fileID,paths,subjectName,currentSceneText,params,rawSceneData);
     end
-    
-    %%% ARM MAKE SURE THAT Deg doesnt get used 
-    %%%% figure out what is valid indexes 
-    %%%% use raw time 
-    
-   %%% use pitch and yaw for more complicated way; pitch and yaw are
-   %%% already filtered by confidence 
-    
+  
     
     %%%%%%%%% CALCULATE SACCADES ON VIEWPORT SPACE (VPS) DATA %%%%%%%%%
     % maybe put this inside calculateFixations so not to have unused vars in memory
@@ -442,9 +312,7 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
     if params.avgPreTrial == 1
         if preTrialScene == 1
             %if we want to calculate pretrial, we're not on the first
-            %sanity scene (equator scene), and the current scene is a
-            %sanity scene
-% 
+            %sanity scene (equator scene), and the current scene is a sanity scene
             nSec = 0.05;
             
             if params.gazeType == 1 %because Vive Eye coords are already in degrees, we want to use the raw deg coordinates
@@ -483,9 +351,6 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
             fixShiftX = mean(fixShiftX(startIdx:end));
             fixShiftY = mean(fixShiftY(startIdx:end));
             
-%             fixShiftX = viewportNorm2dva(fixShiftX);
-%             fixShiftY = viewportNorm2dva(fixShiftY);
-%             fixShift = distance(fixShiftX, fixShiftY, params.avgPreTrialX, params.avgPreTrialY);
             
             fixShift = distance(fixShiftX, fixShiftY, 0, 0);
             
@@ -495,8 +360,7 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
                 fixShift = viewportNorm2dva(fixShift);
             end
             
-%             % tlb - i think we should change the way to 
-%             fixShift = rad2deg(2*atan2(fixShift,0.8));
+            %TODO: maybe change the way to fixShift = rad2deg(2*atan2(fixShift,0.8));
             
             xShiftList(preFixCount,1) = fixShiftX;
             yShiftList(preFixCount,1) = fixShiftY;
@@ -543,14 +407,9 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
             
             
             if params.driftCorrection == 1 % if doing drift correction, set the amount to shift gaze points
-%                 preshiftX = meanXshift;
-%                 preshiftY = meanYshift;
 
                 preshiftX = fixShiftX;
                 preshiftY = fixShiftY;
-                
-%                 preshiftX = viewportNorm2dva(fixShiftX);
-%                 preshiftY = viewportNorm2dva(fixShiftY);
                 
             end
         end
@@ -618,24 +477,6 @@ metaData.timeList = timeList;
 metaData.fpsList = fpsList;
 meanFPS = mean(fpsList);
 metaData.meanFPS = meanFPS;
-
-% if params.avgPreTrial == 1
-%     metaData.xShiftList = xShiftList;
-%     metaData.yShiftList = yShiftList;
-%     metaData.fixShiftList = fixShiftList;
-%     metaData.meanXShift = mean(xShiftList);
-%     metaData.meanYShift = mean(yShiftList);
-%     metaData.meanFixShift = mean(fixShiftList);
-%     metaData.meanHeadPitch = mean(meanHeadPitch);
-%     metaData.meanHeadYaw = mean(meanHeadYaw);
-%     metaData.headShiftList = headShiftList;
-%     metaData.meanHeadPitchList = meanHeadPitchList;
-%     metaData.meanHeadYawList = meanHeadYawList;
-%     %new sample based
-%     metaData.meanGazePitchList = meanGazePitchList;
-%     metaData.meanGazeYawList = meanGazeYawList;
-%     metaData.gazeShiftList = gazeShiftList;
-% end
 
 metaData.sceneProcessedList = sceneProcessedList;
 fprintf(fileID, '\n\nMean Time in Scene: %.2f seconds\n', meanTimeList);

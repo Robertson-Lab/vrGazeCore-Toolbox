@@ -1,10 +1,7 @@
-%% DP's Notes:
-%  PURPOSE: calculates fixations & heat maps for participants
-%  INPUTS: project directory, subject directory, parameters, subject raw data
-%  OUTPUTS: TBD at the moment
-
-% Script to BATCH process participants through fixation and heat calculation / mappingInitial 
-% Loads participant names from projectParams and runs through all of them
+%% Batch Processing Participants %%
+% DESCRIPTION:
+% Script to BATCH process participants through fixation calculation and fixation density mapping
+% Loads participant names from setParams and runs through all of them
 
 %% Set Up Directories
 setPaths
@@ -14,7 +11,7 @@ setParams
 for parIndex = 1:size(params.subjectNames,1)
     % set up subject
     subjectName = params.subjectNames(parIndex,:); % get current subject name
-    excludedScenesPar = string(params.excludeScenes(parIndex)); % get excluded scenes list for current subject [DP: start of line should be uncommented?]
+    excludedScenesPar = string(params.excludeScenes(parIndex)); % get excluded scenes list for current subject
     paths = loadSubjectPaths(char(subjectName),paths,params);
 
     %% Run findFixations (Individual)
@@ -29,11 +26,11 @@ for parIndex = 1:size(params.subjectNames,1)
         fprintf('Finished generating heatmaps for subject %s\n', subjectName)
     end
 
-%     % Run gif making
-%     if params.runTimecourseGifIndivid == 1
-%         plotTimecourseGif(char(subjectName), paths,params)
-%         fprintf('Finished making GIFs for subject %s\n', subjectName)
-%     end
+    % Run gif making
+    if params.runTimecourseGifIndivid == 1
+        plotTimecourseGif(char(subjectName), paths,params)
+        fprintf('Finished making GIFs for subject %s\n', subjectName)
+    end
     
     fprintf('Finished processing subject %s\n', subjectName)
 
@@ -42,19 +39,13 @@ for parIndex = 1:size(params.subjectNames,1)
 end
 
 %% Process group data
-if (params.runHeatmappingGroup == 1 || params.runTimecourseGroup == 1 || params.runTimecourseGifGroup)
+if (params.runHeatmappingGroup == 1 || params.runTimecourseGifGroup)
     loadGroupPaths
 
     % Run Heatmapping (Group)
     if params.runHeatmappingGroup == 1
         fix2Heat(params.subjectNames,paths,params)
         fprintf('Finished generating heatmaps for cohort %s\n', params.cohortName)
-    end
-
-    % Run Heatmapping timecourse (Group)
-    if params.runTimecourseGroup == 1
-        fix2HeatTimecourse(params.subjectNames,paths,params)
-        fprintf('Finished generating timecourses for cohort %s\n', params.cohortName)
     end
 
     %Run gif making (Group)

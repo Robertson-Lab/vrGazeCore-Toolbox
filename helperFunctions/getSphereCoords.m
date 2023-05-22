@@ -1,6 +1,6 @@
 function [sampMat,indicesOut] = getSphereCoords(sampRate,imSize)
 
-sphereSampling = SpiralSampleSphere(sampRate);
+sphereSampling = spiralSampleSphere(sampRate);
 sphereSampling = rad2deg(sphereSampling);
 
 

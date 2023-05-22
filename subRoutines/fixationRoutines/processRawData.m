@@ -1,8 +1,3 @@
-%% DP's Notes:
-%  PURPOSE: loads raw eye-tracking data of participant & organizes it into a matrix
-%  INPUTS: subjectName, params, paths, raw data
-%  OUTPUTS: parData (current participant's data in a matrix), sceneNames (scene name associated with each sample), sceneChangeList (vector of indices indicating sample at start of of trial)
-
 function [parData,sceneNames, sceneChangeList] = processRawData(subjectName, params, paths)
 
 % processRawData is a function that loads a data file of a participant and
@@ -131,17 +126,13 @@ end
 
 %%  Set how the scene change points are calculated based on the unity project version
 
-if params.unityProjectVersion == 0 %for the old code processing active passive + 16p + Older
-    sceneChangeList = [1 find(scenechange==0) length(sceneNames)];%find indices where a scene changes, add 1 to beginning since that is the first scene
-elseif params.unityProjectVersion == 1 %for the new code: SNAPI,EMAX + Newer
-    
+   
     if find(scenechange==0) > 1
         sceneChangeList = [find(scenechange==0) length(sceneNames)];%find indices where a scene changes, add 1 to beginning since that is the first scene
         
     else
         sceneChangeList = [1 find(scenechange==0) length(sceneNames)];%find indices where a scene changes, add 1 to beginning since that is the first scene
     end
-end
 
 end
 

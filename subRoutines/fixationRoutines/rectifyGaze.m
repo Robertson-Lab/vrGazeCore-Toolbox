@@ -1,10 +1,5 @@
-%% DP's Notes:
-%  PURPOSE: rectifies gaze data with head data
-%  INPUTS: filtered gaze data, pitch, yaw
-%  OUTPUTS: pitch_new, yaw_new
-
 function [yaw_new,pitch_new] = rectifyGaze(gazeX_deg, roll_rad, gazeY_deg, pitch, yaw)
-% JSM 12/13/18 -adding python fn that does this accurately
+% Includes python fn that does this accurately
 % Function to rotate all gaze points based on roll, rectifying gaze data with head data
 
 pitch = pitch-90;

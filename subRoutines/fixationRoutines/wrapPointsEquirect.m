@@ -1,8 +1,3 @@
-%% DP's Notes:
-%  PURPOSE: wraps points around an equirectangluar projection
-%  INPUTS: points in x-dim, y-dim, dimensions of equirect projections in x-dim, dimentions of equirect projections in y-dim, roundpoints
-%  OUTPUTS: same variable names, just with equirect corrected
-
 function [ inputX, inputY ] = wrapPointsEquirect( inputX, inputY, maxX, maxY, roundPoints)
 %WRAPPOINTSEQUIRECT wrap points around an equirectangular projection
 % Some fixation locations are off the screen, shift them so that
