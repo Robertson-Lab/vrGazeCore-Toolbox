@@ -20,7 +20,7 @@ projectDataDir = [ projectDir 'eyeTrackResults/' ];
     projectHeatDir = [ projectDataDir 'heatMaps/' ];                      % Heat maps
         projectHeatMatDir = [ projectHeatDir 'mat/' ]; 
         projectHeatPlotsDir = [ projectHeatDir 'plots/' ]; 
-            projectTimecoursePlotDir = [ projectDataDir 'timecourseHeat/' ]; % Timecourse gifs of heat maps
+            projectTimecoursePlotsDir = [ projectDataDir 'timecourseHeat/' ]; % Timecourse gifs of heat maps
 
 % Set meta and log folders
 projectAnalLogsDir = [ projectDir 'eyeTrackLogs/' ];
