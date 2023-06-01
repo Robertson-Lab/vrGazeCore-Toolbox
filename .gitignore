@@ -1,0 +1,9 @@
+eyeTrackLogs/
+
+eyeTrackResults/
+
+*.csv
+*.txt
+*.jpg
+*.jpeg
+*.png
