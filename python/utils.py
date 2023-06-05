@@ -1,158 +1,282 @@
-import os, sys
-import argparse
+import numpy as np
+import pandas as pd
+from sklearn.metrics.pairwise import haversine_distances
 
-def get_args_parser():
+from scipy.signal.windows import gaussian
+from scipy.signal import convolve
 
-	parser = argparse.ArgumentParser('vrGazeCore - Parameters', add_help=False)
+def get_window_indices(x, window_size):
+        
+    # Given a x (a series of points/times) and y (a start index)
+    def get_forward_index(x, index):
+        window_forward = abs(x - (x[index] + window_size/2))
+        return np.argwhere(window_forward == min(window_forward))[0]
+    
+    def get_backward_index(x, index):
+        window_backward = abs(x - (x[index] - window_size/2))
+        return np.argwhere(window_backward == min(window_backward))[0]
+    
+    # Calculate start and end of the mad sliding window
+    start_index = get_forward_index(x, 0)
+    end_index = get_backward_index(x, len(x)-1)
+    
+    indices = [np.arange(get_backward_index(x, i), get_forward_index(x,i)+1) for i in np.arange(start_index, end_index+1)]
+    
+    return indices, start_index, end_index
 
-	# Set top-level directory structure
-	parser.add_argument('--project_dir', type=str, help='Absolute path to directory of current project')
-	parser.add_argument('--raw_data_folder', type=str, help='Name or path of raw data folder')
-	parser.add_argument('--stim_folder', type=str, help='Name or path of stimuli folder')
+def mad(data, axis=None):
+    return np.mean(abs(data - np.mean(data, axis)), axis)
 
-	# Processing Options
-	parser.add_argument('--run_find_fix', action='store_true', default=False, help="Run find fixations for all individuals")
-	parser.add_argument('--run_heatmapping_individ', action='store_true', default=False, help="Run individual heatmapping for each subject")
-	parser.add_argument('--run_heatmapping_group', action='store_true', default=False, help="Run group heatmapping for the cohort")
-	parser.add_argument('--run_timecourse_gif_individ', action='store_true', default=False, help="Make individual heatmapping timecourse gifs for each subject")
-	parser.add_argument('--run_timecourse_gif_group', action='store_true', default=False, help="Make individual heatmapping timecourse gifs for each subject")
+def sliding_window_mad(x, time, window_size):
+    
+    """
+    Rolling sliding window of Mean Absolute Deviation
+    
+    window_size is expected to be time
+    """
+    
+    indices, start_index, end_index = get_window_indices(time, window_size)
+    mean_absolute_deviation = np.asarray([mad(x[i]) for i in indices])
 
-	# Headset Type
-	parser.add_argument('--headset_type', type=int, default=0, choices=[0, 1, 2, 3], help="Headset type (0=DK2, 1=Vive, 2=Vive Eye, 3=Oculus Go)")
+    trimmed_time = time[np.arange(start_index,end_index)]
+    
+    return mean_absolute_deviation, trimmed_time
 
-	# Select Subjects
-	parser.add_argument('--cohort_name', type=str, default='cohortName', help="Name for the group of subjects")
-	parser.add_argument('--list_subject_names', action='store_true', default=False, help="List subject names manually")
+######### FIXATION FUNCTIONS #########
 
-	# Heatmapping Options
-	parser.add_argument('--heatmap_timesteps', type=int, default=1, help="Number of time segments to divide scene into")
+def get_fixation_indices(stat, threshold):
+    
+    # Create a list of potential fixation indices based on moments where it fell below
+    # MAD threshold
+    potential_fixation_indices = np.where(stat < threshold)[0]
 
-	# Additional Scene Parameters
-	parser.add_argument('--min_samples', type=int, default=100, help="Minimum number of samples to consider a scene")
-	parser.add_argument('--min_time_in_scene', type=int, default=5, help="Minimum time in seconds for a scene")
-	parser.add_argument('--scanned_filter', action='store_true', default=False, help="Remove scenes where they were not explored")
-	parser.add_argument('--scanned_thresh', type=int, default=66, help="Percent threshold to exclude scenes not explored based on head direction")
+    # Find when indices were consecutive --> 1 when consecutive, >1 when not consecutive
+    potential_consecutive_indices = np.diff(potential_fixation_indices)
 
-	# Manually Exclude Scenes
-	parser.add_argument('--exclude_scenes', type=str, nargs='+', default=[], help="List of scenes to exclude")
+    # Find  all non-consecutive potential fixes, will be potential_fix_diff will be > 1 
+    # when changing b/w two discrete gaze points
+    
+    potential_fixation_start = np.concatenate([
+        np.zeros(1).astype(int),
+        np.where(potential_consecutive_indices > 1)[0] + 1 # adjust for missing the first index
+    ])
 
-	# Ignore List
-	parser.add_argument('--ignore_list', type=str, nargs='+', default=['fixate*'], help="List of scenes to ignore")
+    # Fixation end is right before the next fixation start
+    potential_fixation_end = np.concatenate([
+        np.where(potential_consecutive_indices > 1)[0],
+        potential_consecutive_indices.shape
+    ])
 
-	# Load Scenes
-	parser.add_argument('--scene_dir', type=str, default='path_to_scenes_directory', help="Directory containing scene files")
+    # Get the indices for the original velocity/MAD array
+    begin_fixation_indices = potential_fixation_indices[potential_fixation_start] - 1
+    end_fixation_indices = potential_fixation_indices[potential_fixation_end]
 
-	# Eyetracking options
-	parser.add_argument('--gaze_type', type=int, default=0, choices=[0, 1], help="Gaze type (0=2D tracking, 1=3D)")
+    # gets sets of indices of potential fixations
+    fixation_indices = list(map(lambda x: np.arange(*x), zip(begin_fixation_indices, end_fixation_indices)))
 
-	# Fixations Options
-	parser.add_argument('--exclude_first_n_sec', type=int, default=0, help="Exclude n seconds from the start of the trial")
-	parser.add_argument('--min_mad', type=int, default=50, help="Minimum mean absolute deviation of velocity for potential fixations")
-	parser.add_argument('--max_mad', type=int, default=100, help="Maximum mean absolute deviation of velocity for potential fixations")
-	parser.add_argument('--exclude_fix_durs_less_than', type=float, default=0.1, help="Exclude fixations with a duration less than a certain threshold")
+    # Get length of each fixation
+    length_fixations = list(map(len, fixation_indices))
+    
+    return fixation_indices, length_fixations
 
-	# Eye Selection
-	parser.add_argument('--use_eye', type=int, default=3, choices=[0, 1, 2, 3], help="Eye selection (0=eye0, 1=eye1, 2=choose best eye, 3=average eyes)")
+def calculate_fixation_centroids(lat, lon, time, fixation_indices):
+    """
+    
+    """
+    
+    df = pd.DataFrame(columns=['fix_yaw', 'fix_pitch', 'start_time', 'end_time', 'spread'])
+    
+    for i, indices in enumerate(fixation_indices):
 
-	# Locked Head to Center
-	parser.add_argument('--head_locked', action='store_true', default=False, help="Lock head direction to center (0=No, 1=Yes)")
+        lat_sample, lon_sample = lat[indices], lon[indices]
+        latbar, lonbar = sphere_centroid(lat_sample, lon_sample)
 
-	# Confidence Filter
-	parser.add_argument('--min_conf_thresh', type=float, default=0.25, help="Minimum confidence threshold")
-	parser.add_argument('--max_conf_percent', type=int, default=75, help="Maximum percentage of discarded data due to confidence")
+        point_spread = np.rad2deg(haversine_distances(
+            np.deg2rad(np.stack([latbar, lonbar])[np.newaxis]),
+            np.deg2rad(np.stack([lat_sample, lon_sample]).T)
+        ))
 
-	# Eccentricity Filter
-	parser.add_argument('--ecc_filt_x', type=int, default=100, help="Maximum eccentricity in the x dimension")
-	parser.add_argument('--ecc_filt_y', type=int, default=100, help="Maximum eccentricity in the y dimension")
+        df.loc[len(df)] = {
+            'fix_yaw': lonbar,
+            'fix_pitch': latbar,
+            'start_time': time[indices[0]],
+            'end_time': time[indices[-1]],
+            'spread': point_spread.mean()
+        }
+        
+    df['duration'] = df['end_time'] - df['start_time']
+    
+    return df
 
-	# Smoothing
-	parser.add_argument('--use_smoothing', action='store_true', default=False, help="Use smoothing (0=No, 1=Yes)")
-	parser.add_argument('--use_interpolation', action='store_true', default=False,  help="Use linear interpolation (0=No, 1=Yes)")
-	parser.add_argument('--duration_for_interpolation', type=float, default=0.10, help="Duration for interpolation")
+def concatenate_fixations(df, spatial_distance, temporal_distance):
+    """
+    
+    Concatenates fixations that fall within a range
+    
+    """
 
-	# Fixation Calculation
-	parser.add_argument('--fix_type', type=int, default=1, choices=[1, 2], help="Fixation type (1=gaze fixation, 2=head fixation)")
-	parser.add_argument('--fix_spatial_dist', type=int, default=2, help="Spatial distance for fixation grouping")
-	parser.add_argument('--fix_temp_dist', type=float, default=0.15, help="Temporal distance for fixation grouping")
-	parser.add_argument('--fix_validation', action='store_true', default=False, help="Fixation validation (0=No, 1=Yes)")
-	parser.add_argument('--val_window', type=int, default=2, help="Number of MAD samples for fixation validation")
-	parser.add_argument('--exclude_last_n_sec', type=int, default=0, help="Exclude n seconds from the end of the trial")
-	parser.add_argument('--exclude_first_n_fix', type=int, default=1, help="Exclude n fixations from the start of the trial")
-	parser.add_argument('--exclude_last_n_fix', type=int, default=0, help="Exclude n fixations from the end of the trial")
+    n_fixations = len(df)
+    
+    fixation_spatial_distance = np.rad2deg(haversine_distances(np.deg2rad(df[['fix_pitch', 'fix_yaw']].values)))
+    fixation_spatial_distance = np.diagonal(fixation_spatial_distance, offset=1)
 
-	# Drift Correction
-	parser.add_argument('--drift_correction', action='store_true', default=False, help="Perform drift correction (0=No, 1=Yes)")
+    # Find difference in time between subsequent fixations
+    start_time, end_time = df[['start_time', 'end_time']].values.T
+    fixation_time_distance = start_time[1:] - end_time[:-1]
 
-	# Pre-Trial Fixations
-	parser.add_argument('--concat_sanity', action='store_true', default=False, help="Set Equator scenes to the correct name for plotting")
-	parser.add_argument('--avg_pre_trial', action='store_true', default=False, help="Calculate pretrial fixation distance and threshold")
-	parser.add_argument('--avg_pre_trial_thresh', type=float, default=5, help="Tolerance for determining if a scene should be drift corrected or skipped")
-	parser.add_argument('--exclude_by_pre_trial',action='store_true', default=False, help="Exclude the next scene if the previous pre-trial was bad")
-	parser.add_argument('--avg_pre_trial_x', type=float, default=-1.26, help="True x coordinate of stimulus")
-	parser.add_argument('--avg_pre_trial_y', type=float, default=-0.54, help="True y coordinate of stimulus")
+    concatenate_indices = np.where(np.logical_and(
+        fixation_spatial_distance < spatial_distance, 
+        fixation_time_distance < temporal_distance
+    ))[0]
+    
+    n_concatenations = len(concatenate_indices)
 
-	return parser
+    for index in concatenate_indices:
+        df.loc[index] = df.loc[index:index+1].agg(np.mean)
+        df = df.drop(index=[index+1]).reset_index(drop=True)
+        
+        concatenate_indices -= 1
+
+    print (f'FIXATION CONCATENATION: concatenated {n_concatenations} out of {n_fixations} fixations')
+        
+    return df
+
+def scale_durations(durations, bound_filtering=False):
+
+    if bound_filtering:
+        durations[durations > np.percentile(durations,95)] = np.percentile(durations,95)
+        durations[durations < np.percentile(durations,0.1)] = np.percentile(durations,0.1)
 
 
-def set_paths(args):
+    durations = (durations - min(durations)) / (max(durations) - min(durations))
+    durations = 0.1 + durations * 0.9
+    
+    return durations
 
-	# gaze_core_dir = os.path.join(args.project_dir, 'vrGazeCore')
+### PLOTTING FUNCTIONS ####
 
-	# Set stimuli and data folder to use
-	project_raw_data_dir = os.path.join(args.project_dir, args.raw_data_folder)
-	project_stim_dir = os.path.join(args.project_dir, args.stim_folder)
+def degrees_to_pixels(x, y, width, height):
+    """
+    Scales x,y coordinates in degrees to the size of an image
+    """
+    
+    x_img = np.round((x*width) / 360).astype(int)
+    y_img = np.round((y*height) / 180).astype(int)
+    
+    return x_img, y_img
 
-	# Based on the top-level folders, populate path name variables
-	# Set analysis results folders
-	project_data_dir = os.path.join(args.project_dir, 'eyeTrackResults')
-	project_fix_data_dir = os.path.join(project_data_dir, 'fixations')
-	project_fix_mat_dir = os.path.join(project_fix_data_dir, 'npy')
-	project_fix_plots_dir = os.path.join(project_fix_data_dir, 'plots')
-	project_heat_dir = os.path.join(project_data_dir, 'heatMaps')
-	project_heat_mat_dir = os.path.join(project_heat_dir, 'npy')
-	project_heat_plots_dir = os.path.join(project_heat_dir, 'plots')
-	project_timecourse_plot_dir = os.path.join(project_data_dir, 'timecourseHeat')
+def pixels_to_degrees(x, y, width, height):
+    """
+    Scales x,y coordinates in degrees to the size of an image
+    """
+    
+    yaw = np.mod(x*360/width, 360)
+    pitch = np.mod(y*180/height, 180)
+    
+    return yaw, pitch
 
-	# Set meta and log folders
-	project_anal_logs_dir = os.path.join(args.project_dir, 'eyeTrackLogs')
-	project_meta_data_dir = os.path.join(project_anal_logs_dir, 'meta')
-	project_logs_dir = os.path.join(project_anal_logs_dir, 'logs')
 
-	# Print check about paths that need to be changed
-	print("Check that the following paths are correct:")
-	# print(f"gaze_core_dir = {gaze_core_dir}")
-	print(f"project_raw_data_dir = {project_raw_data_dir}")
-	print(f"project_stim_dir = {project_stim_dir}")
+### GAUSSIAN SMOOTHING ###
 
-	# If correct, input 1
-	check_path = int(input("Are the paths correct?\n1 = Yes\n2 = No\nEnter:"))
-	if check_path == 2:
-		# break script, prompt to go back
-		print("batch_process_pars will stop running. Go to set_paths to change the incorrect paths.")
-		raise ValueError("Paths are not correct.")
+def get_gaussian_window(n_points, width_factor=2.5):
+    """
+    width_factor matches how matlab calculates the sigma of the gaussian
+    """
+    
+    # calculate sigma based on a width factor (this matches matlab's implementation)
+    sigma = (n_points - 1) / (2*width_factor)
+    window = gaussian(n_points, sigma)
+    
+    return window
 
-	# Dictionary to store paths
-	paths = {
-		'project_dir': args.project_dir,
-		# 'gaze_core_dir': gaze_core_dir,
-		'project_raw_data_dir': project_raw_data_dir,
-		'project_stim_dir': project_stim_dir,
-		'project_data_dir': project_data_dir,
-		'project_fix_data_dir': project_fix_data_dir,
-		'project_fix_mat_dir': project_fix_mat_dir,
-		'project_fix_plots_dir': project_fix_plots_dir,
-		'project_heat_dir': project_heat_dir,
-		'project_heat_mat_dir': project_heat_mat_dir,
-		'project_heat_plots_dir': project_heat_plots_dir,
-		'project_timecourse_plot_dir': project_timecourse_plot_dir,
-		'project_anal_logs_dir': project_anal_logs_dir,
-		'project_meta_data_dir': project_meta_data_dir,
-		'project_logs_dir': project_logs_dir,
-	}
+def apply_gaussian_smoothing(image, axis, gaussian_base_width=200, variable_width=False):
+    
+    n_items = image.shape[axis]
+    
+    for i in range(n_items):
+        indices = np.arange(i, i+1)[..., np.newaxis]
+        
+        if variable_width:
+            _, pitch = pixels_to_degrees(i, i, 2000, 1000)
+            pitch = pitch - 90
+            
+            # scale the number of points in the distribution by pitch
+            n_points = np.round(gaussian_base_width*(1/np.cos(np.deg2rad(pitch)))) - 1
+            n_points = n_points if n_points < 1e6 else 1e6
+        else:
+            n_points = gaussian_base_width
+                    
+        # grab gaussian window for the current pitch
+        gauss_window = get_gaussian_window(n_points)
+        
+        # find the values along the current axis --> convolve with the window
+        vals = np.take_along_axis(image, indices=indices, axis=axis).squeeze()
+        smoothed = convolve(vals, gauss_window, mode='same')
+        
+        # insert values back into the axis
+        np.put_along_axis(image, indices=indices, values=np.expand_dims(smoothed, axis=axis), axis=axis)
+    
+    return image
 
-	# Check if necessary directories exist; if not, make them.
-	for path in paths.values():
-		if not os.path.exists(path):
-			os.makedirs(path)
+### FOR CARTESIAN/SPHERE MAPPING
 
-	return paths
+from typing import Tuple, Union
+from math import sin, cos, atan2, sqrt
+
+
+Number = Union[int, float]
+Vector = Tuple[Number, Number, Number]
+
+
+def distance(a: Vector, b: Vector) -> Number:
+    """Returns the distance between two cartesian points."""
+    x = (b[0] - a[0]) ** 2
+    y = (b[1] - a[1]) ** 2
+    z = (b[2] - a[2]) ** 2
+    return (x + y + z) ** 0.5
+
+  
+def magnitude(x: Number, y: Number, z: Number) -> Number:
+    """Returns the magnitude of the vector."""
+    return np.sqrt(x * x + y * y + z * z)
+
+
+def to_spherical(x: Number, y: Number, z: Number) -> Vector:
+    """Converts a cartesian coordinate (x, y, z) into a spherical one (radius, theta, phi)."""
+    radius = magnitude(x, y, z)
+    phi = np.arctan2(z, np.sqrt(x * x + y * y))
+    theta = np.arctan2(y, x)
+    return (radius, theta, phi)
+
+
+def to_cartesian(radius: Number, theta: Number, phi: Number) -> Vector:
+    """Converts a spherical coordinate (radius, theta, phi) into a cartesian one (x, y, z)."""
+    x = radius * np.cos(phi) * np.cos(theta)
+    y = radius * np.cos(phi) * np.sin(theta)
+    z = radius * np.sin(phi)
+    return (x, y, z)
+
+def sphere_centroid(lat, lon):
+    """
+    Designed to match MATLAB meanm function w/ assumed radius of 1
+
+    theta=azimuth (longitude)
+    phi=elevation (latitude)
+    """
+    
+    # convert to radians
+    lat, lon = map(np.deg2rad, [lat, lon])
+
+    # convert to x,y,z coordinates in cartesian space
+    points_cartesian = to_cartesian(radius=1, theta=lon, phi=lat)
+
+    # vector sum of cartesian points
+    x, y, z = map(np.sum, points_cartesian)
+
+    # map back to spherical space
+    r, lon, lat = to_spherical(x,y,z)
+
+    # # convert back to degrees
+    latbar, lonbar = map(np.rad2deg, [lat, lon])
+    
+    return latbar, lonbar
