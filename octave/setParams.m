@@ -4,7 +4,7 @@
 % Modify these values here. They will be passed on to the other scripts via
 % the params and paths structs.
 
-%% Release Version 
+%% Release Version
 scriptVersion = '0.1.5'; % don't change unless updating version
 
 %% Need to Adjust Parameters
@@ -17,24 +17,24 @@ scriptVersion = '0.1.5'; % don't change unless updating version
     runTimecourseGifGroup = 0; % if 1, make individual heatmapping timecourse gifs for each subject
 
     % Headset Type
-    headsetType = 0; %Default 0; DK2=0 Vive=1 ViveEye = 2, Oculus Go = 3 
+    headsetType = 0; %Default 0; DK2=0 Vive=1 ViveEye = 2, Oculus Go = 3
 
     % Select Subjects
-    cohortName = 'cohortName'; % pick a cohort name. If doing group processing, this will be used to label your files
-    listSubjectNames = 0; % if 1 list 
-        
+    cohortName = 'octTest-1'; % pick a cohort name. If doing group processing, this will be used to label your files
+    listSubjectNames = 0; % if 1 list
+
     if listSubjectNames == 1 % manually list subjects here
-        subjectNames = string({
+        subjectNames = cellstr({
             'subject1';
-        });    
+        });
     else % OR
-        %%%% Run All Subjects in a specified raw Data Dir 
+        %%%% Run All Subjects in a specified raw Data Dir
         d = dir(sprintf(paths.projectRawDataDir));%list directory where live
         subjectFiles = d(~ismember({d.name}, {'.', '..','.DS_Store'}));%exclude non-files
         subjectNames = [];
         for subjectI = 1:length(subjectFiles)
             subjectName = subjectFiles(subjectI).name(1:end-4);
-            subjectNames = [subjectNames ; string(subjectName)];%record the current scene to the list of scenes
+            subjectNames = [subjectNames ; cellstr(subjectName)];%record the current scene to the list of scenes
         end
     end
 
@@ -44,7 +44,7 @@ scriptVersion = '0.1.5'; % don't change unless updating version
     % Scene Parameter
     sceneLength = 16; % scene duration in seconds
 
-%% Additional Scene Parameters 
+%% Additional Scene Parameters
     % Scene Sample Filter
     minSamples = 100; %Default 100; skip scenes w/ less than 100 samples
     % Scene Time Filter
@@ -62,7 +62,7 @@ scriptVersion = '0.1.5'; % don't change unless updating version
         % this means par1 exclude 3 scenes. pars2+3 exclude none. par4 exclude only scene05   %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    ignoreList = {'fixate*'}; % anything in scene directory that should be ignored for all subjects (e.g., subfolders)  
+    ignoreList = {'fixate*'}; % anything in scene directory that should be ignored for all subjects (e.g., subfolders)
 
     % Load scenes based on the sceneDir (make sceneList)
     d = dir(sprintf(paths.projectStimDir));%list directory where live
@@ -70,13 +70,13 @@ scriptVersion = '0.1.5'; % don't change unless updating version
     sceneList = [];
     for sceneI = 1:length(sceneFiles)
         sceneName = sceneFiles(sceneI).name(1:end-4);
-        sceneList = [sceneList ; string(sceneName)];%record the current scene to the list of scenes
+        sceneList = [sceneList ; cellstr(sceneName)];%record the current scene to the list of scenes
     end
 
     junkSceneList = {'endTrial'}; % need to check if this can be merged with ignoreList
 
 %% Eyetracking options
-        gazeType = 0; %Default 0 (2D tracking), 3D = 1  
+        gazeType = 0; %Default 0 (2D tracking), 3D = 1
     % Fixations Options
         excludeFirstNSec = 0; % default = 0; exclude n seconds of start of trial
         minMad = 50; % default = 50; Windows with a MAD (mean absolute deviation) less than x deg/s were classified as potential fixations
@@ -97,11 +97,11 @@ scriptVersion = '0.1.5'; % don't change unless updating version
                             % proportional to ~ 145x160 ? confusing
     % Smoothing
         useSmoothing = 0; % default 0. if 1, use Matt's smoothing. Not exactly fully implemented at the moment but could be easily. [DP: figure out where smoothing is]
-        useInterpolation = 0; % default 0, if 1 use linear interpolation (Wass 2012) to recover data loss samples < 100ms 
+        useInterpolation = 0; % default 0, if 1 use linear interpolation (Wass 2012) to recover data loss samples < 100ms
         durationForInterpolation = 0.10; %using 100ms
     % Fixation Calculation
         % based on Mean Absolute Deviation in degrees/sec
-        fixType = 1; % type of fixation to calculate, 1 = gaze fixation, 2 = head fixation  
+        fixType = 1; % type of fixation to calculate, 1 = gaze fixation, 2 = head fixation
             if fixType == 1 % for eye fixations
                 fixSpatialDist = 2; % if fixations within this # of deg, group
                 fixTempDist = 0.15; % if fixations are within fixTempDist of each other group
@@ -123,7 +123,7 @@ scriptVersion = '0.1.5'; % don't change unless updating version
         avgPreTrialThresh = 5; % DVA, tolerance for determining if a scene should be drift corrected(belowthresh) or skipped (above thresh), distance from true point (drift)
         excludeByPreTrial = 1; % exclude the next scene if the previous pre-trial was bad
         avgPreTrialX = -1.26; % true x coordinate of stimulus -1.26
-        avgPreTrialY = -0.54; % true y coordinate of stim -0.54  
+        avgPreTrialY = -0.54; % true y coordinate of stim -0.54
 
 %% Plotting & Heatmap Options
     % General Options
@@ -146,19 +146,19 @@ scriptVersion = '0.1.5'; % don't change unless updating version
         imDimX = 2000; %horizontal dimension (in pixels) of equirectangular images
         imDimY = 1000; %vertical dimension (in pixels) of equirectangular images
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%    
+%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Fixed Parameters
 %% Probably don't modify; change at your own risk
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Headset-Dependent Settings
 
-if headsetType==2 %Vive Eye settings    
+if headsetType==2 %Vive Eye settings
     avgPreTrialX = -1.26; % true x coordinate of stimulus -1.26
     avgPreTrialY = -0.54; % true y coordinate of stim -0.54
     if gazeType == 1
         driftCorrection = 0;
         avgPreTrial = 1;
-    end    
+    end
 end
 
 if headsetType == 3 %if we're using the oculus go, override any other settings here
@@ -166,7 +166,7 @@ if headsetType == 3 %if we're using the oculus go, override any other settings h
     useSmoothing = 0; %make sure no smoothing
     useInterpolation = 0; % make sure no interpoolation
     avgPreTrial = 0;
-    
+
     % don't actually know these numbers - need to measure
     fovX = 100;%horizontal fov of headset in degrees
     fovY = 100;%vertical fov of headset in degrees
@@ -177,7 +177,7 @@ if headsetType == 0 % DK2
     %measured fov numbers
     fovX = 90;%horizontal "fov" of headset in degrees
     fovY = 100;%vertical "fov" of headset in degrees
-    
+
 %         % jeff expansion fov numbers
 %         fovX = 145;%horizontal "fov" of headset in degrees
 %         fovY = 160;%vertical "fov" of headset in degrees
@@ -185,7 +185,7 @@ elseif headsetType == 1 % VIVE
     %note, these are probably not correct. If you use the Vive for some reason, double check this...
     fovX = 145;%horizontal "fov" of headset in degrees 4/30//19 was 145
     fovY = 160;%vertical "fov" of headset in degrees4/30//19 was 160
-    
+
 elseif headsetType == 2 % VIVE EYE
     fovX = 75;%horizontal "fov" of headset in degrees
     fovY = 90;%vertical "fov" of headset in degrees
@@ -207,7 +207,7 @@ fprintf('Check that the following parameters are correct:\n'); % Display necessa
     fprintf('runTimecourseGifIndivid = %d\n',runTimecourseGifIndivid);
     fprintf('heatsetType = %d\n',headsetType);
     fprintf('cohortName = %s\n',cohortName);
-    fprintf('subjectNames = %s\n',subjectNames)
+    fprintf('subjectNames = %s\n',subjectNames{:})
     fprintf('gazeType = %d\n',gazeType);
 % If correct, input 1
 checkParams = input('Are the parameters correct? \n 1 = Yes \n 2 = No\n Enter:');
@@ -222,9 +222,9 @@ end
 % if you add any new parameters to this file, also add them to this list so
 % that they are added to the params struct
 paramsList = {
-    'scriptVersion'; 
-    'cohortName'; 
-    'subjectNames'; 
+    'scriptVersion';
+    'cohortName';
+    'subjectNames';
     'excludeScenes';
     'runFindFix';
     'runHeatmappingIndivid';
@@ -241,12 +241,12 @@ paramsList = {
     'eccFiltY';
     'concatSanity';
     'avgPreTrialThresh';
-    'useSmoothing'; 
-    'useInterpolation'; 
-    'durationForInterpolation'; 
-    'fixType'; 
-    'fixValidation'; 
-    'valWindow'; 
+    'useSmoothing';
+    'useInterpolation';
+    'durationForInterpolation';
+    'fixType';
+    'fixValidation';
+    'valWindow';
     'minMad';
     'maxMad';
     'excludeFirstNSec';
@@ -272,8 +272,8 @@ paramsList = {
     'sceneList';
     'plotFixFlag';
     'fovX';
-    'fovY'; 
-    'maxFOV'; 
+    'fovY';
+    'maxFOV';
     'imDimX';
     'imDimY';
     'excludeByPreTrial';

@@ -3,23 +3,23 @@
 % This file sets paths to be passed to other scripts and adds dirs to your path.
 
 % Set Top Level Paths
-projectDir = 'projectDirectoryName/';                       % point this to to your main project folder (one level above folders with stimuli, raw data, etc.)
-gazeCoreDir = [projectDir 'vrGazeCore/'];                       % point this to the vrGazeCore script directory 
+projectDir = '~/Documents/octaveGazeCore/';                       % point this to to your main project folder (one level above folders with stimuli, raw data, etc.)
+gazeCoreDir = [projectDir 'octave/'];                       % point this to the vrGazeCore script directory
 
-% Set stimuli and data folder to use                    
-projectRawDataDir = [projectDir 'rawDataFolderName/'];                    % Raw Data
-projectStimDir = [ projectDir 'stimuliFolderName/' ];            % Project stimuli to process
+% Set stimuli and data folder to use
+projectRawDataDir = [projectDir 'rawData/'];                    % Raw Data
+projectStimDir = [ projectDir 'stimuli/' ];            % Project stimuli to process
 
 %% Based on the top-level folders, populate path name variables:
 % Set analysis results folders
-projectDataDir = [ projectDir 'eyeTrackResults/' ];                               
+projectDataDir = [ projectDir 'eyeTrackResults/' ];
     projectFixDataDir = [ projectDataDir 'fixations/' ];         % Fixation .mat files
-        projectFixMatDir = [ projectFixDataDir 'mat/' ]; 
+        projectFixMatDir = [ projectFixDataDir 'mat/' ];
         projectFixPlotsDir = [ projectFixDataDir 'plots/' ];
     %projectSaccadeDataDir = [ projectDataDir 'saccades/' ];             % Saccade info
     projectHeatDir = [ projectDataDir 'heatMaps/' ];                      % Heat maps
-        projectHeatMatDir = [ projectHeatDir 'mat/' ]; 
-        projectHeatPlotsDir = [ projectHeatDir 'plots/' ]; 
+        projectHeatMatDir = [ projectHeatDir 'mat/' ];
+        projectHeatPlotsDir = [ projectHeatDir 'plots/' ];
             projectTimecoursePlotsDir = [ projectDataDir 'timecourseHeat/' ]; % Timecourse gifs of heat maps
 
 % Set meta and log folders
@@ -43,12 +43,12 @@ end
 
 % list of paths
 pathsList = {
-    'projectDir'; 
-    'gazeCoreDir'; 
+    'projectDir';
+    'gazeCoreDir';
     'projectRawDataDir';
-    'projectStimDir'; 
-    'projectDataDir'; 
-    'projectFixDataDir'; 
+    'projectStimDir';
+    'projectDataDir';
+    'projectFixDataDir';
     'projectFixMatDir';
     'projectFixPlotsDir';
  %   'projectSaccadeDataDir';
@@ -57,9 +57,9 @@ pathsList = {
     'projectHeatPlotsDir';
     'projectTimecoursePlotsDir';
     'projectAnalLogsDir';
-    'projectMetaDataDir'; 
+    'projectMetaDataDir';
     'projectLogsDir';
-    }; 
+    };
 
 %% Store paths in a struct for easy passing into functions
 paths = struct;
