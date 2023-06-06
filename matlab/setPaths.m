@@ -3,12 +3,18 @@
 % This file sets paths to be passed to other scripts and adds dirs to your path.
 
 % Set Top Level Paths
-projectDir = 'projectDirectoryName/';                       % point this to to your main project folder (one level above folders with stimuli, raw data, etc.)
-gazeCoreDir = [projectDir 'vrGazeCore/'];                       % point this to the vrGazeCore script directory 
+projectDir = '~/Dropbox/Projects/vrGazeCore-Toolbox/';
+gazeCoreDir = [projectDir 'matlab/'];   
 
 % Set stimuli and data folder to use                    
-projectRawDataDir = [projectDir 'rawDataFolderName/'];                    % Raw Data
-projectStimDir = [ projectDir 'stimuliFolderName/' ];            % Project stimuli to process
+projectRawDataDir = [projectDir 'python/data/rawData/'];                    % Raw Data
+projectStimDir = [ projectDir 'python/data/stimuli/combined/' ];            % Project stimuli to process
+% projectDir = 'projectDirectoryName/';                       % point this to to your main project folder (one level above folders with stimuli, raw data, etc.)
+% gazeCoreDir = [projectDir 'vrGazeCore/'];                       % point this to the vrGazeCore script directory 
+
+% % Set stimuli and data folder to use                    
+% projectRawDataDir = [projectDir 'rawDataFolderName/'];                    % Raw Data
+% projectStimDir = [ projectDir 'stimuliFolderName/' ];            % Project stimuli to process
 
 %% Based on the top-level folders, populate path name variables:
 % Set analysis results folders
@@ -20,7 +26,7 @@ projectDataDir = [ projectDir 'eyeTrackResults/' ];
     projectHeatDir = [ projectDataDir 'heatMaps/' ];                      % Heat maps
         projectHeatMatDir = [ projectHeatDir 'mat/' ]; 
         projectHeatPlotsDir = [ projectHeatDir 'plots/' ]; 
-            projectTimecoursePlotDir = [ projectDataDir 'timecourseHeat/' ]; % Timecourse gifs of heat maps
+            projectTimecoursePlotsDir = [ projectDataDir 'timecourseHeat/' ]; % Timecourse gifs of heat maps
 
 % Set meta and log folders
 projectAnalLogsDir = [ projectDir 'eyeTrackLogs/' ];

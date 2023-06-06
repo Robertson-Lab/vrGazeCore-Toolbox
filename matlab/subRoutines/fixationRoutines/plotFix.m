@@ -21,7 +21,7 @@ scatter(fixx,fixy,75,'r','filled');
 scatter(fixx,fixy,6.5*spread_scaled,'r+','LineWidth',2.5);
 scatter(fixx,fixy,6*spread_scaled,length_fix,'+','LineWidth',1);
 colormap('hot');
-scatter(fixx,fixy,80,length_fix,'filled');
+scatter(fixx,fixy,80,duration,'filled');
 ax=gca;
 ax.Visible = 'off';
 hold on;

@@ -10,22 +10,23 @@ scriptVersion = '0.1.5'; % don't change unless updating version
 %% Need to Adjust Parameters
 
     % Processing Options
-    runFindFix = 1; % if 1, runs find fixations for all individuals
+    runFindFix = 0; % if 1, runs find fixations for all individuals
     runHeatmappingIndivid = 1; % if 1, run individual heatmapping for each subject
     runHeatmappingGroup = 1; % if 1, run group heatmapping for the cohort
     runTimecourseGifIndivid = 0; % if 1, make individual heatmapping timecourse gifs for each subject
     runTimecourseGifGroup = 0; % if 1, make individual heatmapping timecourse gifs for each subject
-
+    
     % Headset Type
     headsetType = 0; %Default 0; DK2=0 Vive=1 ViveEye = 2, Oculus Go = 3 
 
     % Select Subjects
     cohortName = 'cohortName'; % pick a cohort name. If doing group processing, this will be used to label your files
-    listSubjectNames = 0; % if 1 list 
+    listSubjectNames = 1; % if 1 list 
         
     if listSubjectNames == 1 % manually list subjects here
         subjectNames = string({
-            'subject1';
+            'furrow380_V1';
+            'furrow381_V1';
         });    
     else % OR
         %%%% Run All Subjects in a specified raw Data Dir 

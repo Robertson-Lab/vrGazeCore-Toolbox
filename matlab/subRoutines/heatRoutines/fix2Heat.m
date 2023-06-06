@@ -117,6 +117,11 @@ function fix2Heat(inputSubjects,paths,params)
             %% Plot heatmaps
 
             imFullName = dir([paths.projectStimDir currentScene '*.jp*']);
+
+            if isempty(imFullName)
+                continue
+            end
+
             imFullName = imFullName.name;
 
             % skip if the image is not there

@@ -46,7 +46,10 @@ if params.fixType == 1 % raw HMD yaw/pitch data is already in lat long space
 end
 
 for i = 1:length(yaw_sphere)-1
-    [dis(i,1),az(i,1)] = distance(yaw_sphere(i), pitch_sphere(i), yaw_sphere(i+1), pitch_sphere(i+1)); %find orthodromic distance from one gaze point to the next
+    % TLB - 6/4/23 --> changing argument order to correct order
+    [dis(i,1),az(i,1)] = distance(pitch_sphere(i),yaw_sphere(i), pitch_sphere(i+1), yaw_sphere(i+1)); %find orthodromic distance from one gaze point to the next
+
+%         [dis(i,1),az(i,1)] = distance(yaw_sphere(i), pitch_sphere(i), yaw_sphere(i+1), pitch_sphere(i+1)); %find orthodromic distance from one gaze point to the next
 end
 
 %% Velocity Calculation
@@ -114,6 +117,13 @@ potential_fix_diff=diff(potential_fixations);%equal to 1 when consecutive, >1 wh
 
 % find all non-consecutive potential fixes, will be potential_fix_diff will be > 1 when changing b/w two discrete gaze points
 potential_fix_start= [1 ; (potential_fix_diff > 1)]; % first point is always a fix start, add 1 to beginning
+
+% TLB - 6/3/23 --> We can take as an assumption that the point immediately
+% before a fixation start was the fixation end (what the code was doing but
+% more complicated)
+
+% potential_fix_end = find(potential_fix_start);
+% potential_fix_end = potential_fix_end(2:end) - 1;
 
 for i = 1:length(potential_fix_start)-1 %build a custom difference function to find the end fixation point
     % if the next point is not neighboring, the point will have a value one
@@ -194,9 +204,11 @@ for i=1:length(begin_fix_idx)-1
 %     %check to see if curr removed idx is between two potential fixation
 %     %idxs and the two values are separated by less than 150ms, potential for concatenation
 %     curr_removal_idxs = find(removedIdxs(:,1) >= end_fix_idx(i) & removedIdxs(:,1) < begin_fix_idx(i+1)); 
-%     %removedIdxs(removeCount,1) >= end_fix_idx(i) && removedIdxs(removeCount,1) < begin_fix_idx(i+1) &&
-    
-    [dist_degrees,d_az] = distance(mean_fix_yaw(i),mean_fix_pitch(i), mean_fix_yaw(i+1), mean_fix_pitch(i+1)); %find distance between fixation i and i+1 (arclen degrees)
+%     %removedIdxs(removeCount,1) >= end_fix_idx(i) && removedIdxs(removeCount,1) < begin_fix_idx(i+1) && start_time(i+1)-end_time(i)
+
+    % TLB 6/4/23 --> changing argument order to correct order
+    [dist_degrees,d_az] = distance(mean_fix_pitch(i), mean_fix_yaw(i), mean_fix_pitch(i+1), mean_fix_yaw(i+1)); %
+%     [dist_degrees,d_az] = distance(mean_fix_yaw(i),mean_fix_pitch(i), mean_fix_yaw(i+1), mean_fix_pitch(i+1)); %find distance between fixation i and i+1 (arclen degrees)
     if start_time(i+1)-end_time(i) < fixTempDist && dist_degrees < fixSpatialDist %% TODO: should base this on our accuracy
         concatenate(i) = 1;
     else

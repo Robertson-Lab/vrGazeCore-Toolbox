@@ -13,7 +13,7 @@ function [] = plotCombinedGaze(resizeIM, yaw, pitch, subjectName, currentSceneTe
 [fixx, fixy] = degreesToPixels(mean_yaw,mean_pitch,2000,1000);
 
 %% Setup Fig
-fig = figure('visible',params.plotVisibility), imshow(resizeIM);%start a new figure
+fig = figure('visible','on'), imshow(resizeIM);%start a new figure
 title([subjectName currentSceneText 'rawHMDCenter']);
 
 hold on

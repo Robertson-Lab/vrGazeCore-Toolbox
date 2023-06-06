@@ -11,9 +11,9 @@ function [imgOut] = gaussianFilterEquirect(imgIn,baseGaussWidth)
 imageW = size(imgIn,2);
 imageH = size(imgIn,1);
 
-% imgIn = zeros(imageH, imageW);
-% imgIn(950, 1900) = 1;
-% imgIn(50, 100) = 1;
+imgIn = zeros(imageH, imageW);
+imgIn(950, 1900) = 1;
+imgIn(50, 100) = 1;
 % imgIn(500, 1000) = 1;
 
 %% Pad & smooth the image - Horizontal steps: pad, variable width gaussian
