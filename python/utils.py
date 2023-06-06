@@ -147,8 +147,9 @@ def scale_durations(durations, bound_filtering=False):
         durations[durations > np.percentile(durations,95)] = np.percentile(durations,95)
         durations[durations < np.percentile(durations,0.1)] = np.percentile(durations,0.1)
 
-
-    durations = (durations - min(durations)) / (max(durations) - min(durations))
+    # make sure all values aren't the same --> otherwise normalization produces nan
+    if len(set(durations)) > 1:
+        durations = (durations - min(durations)) / (max(durations) - min(durations))
     durations = 0.1 + durations * 0.9
     
     return durations
@@ -160,8 +161,8 @@ def degrees_to_pixels(x, y, width, height):
     Scales x,y coordinates in degrees to the size of an image
     """
     
-    x_img = np.round((x*width) / 360).astype(int)
-    y_img = np.round((y*height) / 180).astype(int)
+    x_img = np.mod(np.round((x*width) / 360).astype(int), width)
+    y_img = np.mod(np.round((y*height) / 180).astype(int), height)
     
     return x_img, y_img
 

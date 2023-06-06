@@ -1,0 +1,16 @@
+name: vrgaze
+channels:
+  - defaults
+dependencies:
+  - python=3.9
+  - scipy
+  - notebook
+  - scikit-learn
+  - matplotlib
+  - jupyter
+  - pandas
+  - geopy
+  - opencv
+  - seaborn
+  - dill
+prefix: /Users/thomasbotch/opt/miniconda3/envs/vrgaze

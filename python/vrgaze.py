@@ -13,18 +13,20 @@ from utils import sliding_window_mad, get_fixation_indices, sphere_centroid, cal
 
 class vrGazeData(object):
     
-    def __init__(self, df, trial_number, params, paths):
+    def __init__(self, subject, trial_name, trial_number, df, params, paths):
         
-        self.name = sorted(df['trial'].unique())[0]
+        self.subject = subject
+        self.trial_name = trial_name
         self.trial_number = trial_number
         self.raw_data = df
-        self.confidence_filter = np.zeros(df.shape[0])
-        self.eccentricity_filter = np.zeros(df.shape[0])
+        self.confidence_filter = np.zeros(df.shape[0]) if df is not None else None
+        self.eccentricity_filter = np.zeros(df.shape[0]) if df is not None else None
         self.preprocessed_data = None
         self.filtered_data = None
         self.fixations = None
-        self.density_map = None
+        self.density_maps = None
         
+        self.subject_list = None
         self.params = params
         self.paths = paths
         
@@ -32,7 +34,7 @@ class vrGazeData(object):
     
     def set_image_path(self):
         
-        image_path = glob.glob(os.path.join(self.paths['project_stim_dir'], f"{self.name}*"))
+        image_path = glob.glob(os.path.join(self.paths['project_stim_dir'], f"{self.trial_name}*"))
         
         if image_path:
             return image_path[0]
@@ -78,7 +80,7 @@ class vrGazeData(object):
             return
         return self.fixations.copy()
 
-    def set_density_map(self, array):
+    def set_density_maps(self, array):
         self.density_map = array
 
     def get_density_map(self):
@@ -87,21 +89,34 @@ class vrGazeData(object):
             return
         return self.density_map.copy()
 
+    def set_subject_list(self, subject_list):
+        self.subject_list = subject_list
+
+    def get_subject_list(self):
+        if self.density_map is None:
+            print (f'Subject list has not been set! This usually means you only have one subject')
+            return
+        return self.subject_list
+
     def get_filters(self):
         # a more flexible implementation would be to add any given filter together then turn to bool
         filters = ~np.logical_or(self.confidence_filter, self.eccentricity_filter)
         return filters
 
     def write_data(self, out_dir):
-        fn = os.path.join(out_dir, f'{self.name}_{str(self.trial_number).zfill(5)}.pkl')
+        out_dir = os.path.join(out_dir, self.subject)
 
-        with open(fn, 'wb') as f:
+        if not os.path.exists(out_dir):
+            os.makedirs(out_dir)
+
+        out_fn = os.path.join(out_dir, f'{self.subject}_{self.trial_name}_{str(self.trial_number).zfill(5)}.pkl')
+
+        with open(out_fn, 'wb') as f:
             pickle.dump(self, f)
 
-        return fn
+        return out_fn
 
     def load_data(path):
-
         with open(path, 'rb') as f:
             self = pickle.load(f)
         return self
@@ -137,7 +152,6 @@ class vrGazeCore:
             d['fov_y'] = 90
         # Oculus Go / Quest --> Headtracking only
         elif params.headset_type == 3:
-            print ('Here')
             params.fix_type = 2
             params.use_smoothing = False
             params.use_interpolation = False
@@ -226,7 +240,7 @@ class vrGazeCore:
             columns.extend(['eye_x', 'eye_y', 'conf'])
             return raw_data[columns]
             
-    def parseTrials(self, data, use_dataframe=False):
+    def parseTrials(self, data, subject, use_dataframe=False):
         '''
         Takes a large dataframe and separates into a dataframe for each trial. 
         
@@ -245,7 +259,13 @@ class vrGazeCore:
             parsed_data = [df.reset_index(drop=True) for df in parsed_data] 
             return parsed_data
         else:
-            parsed_data = [vrGazeData(df.reset_index(drop=True), i+1, self.params, self.paths) for i, df in enumerate(parsed_data)]
+            parsed_data = [vrGazeData(
+                subject=subject,
+                trial_name=sorted(df['trial'].unique())[0],
+                trial_number=i+1, 
+                df=df.reset_index(drop=True), 
+                params=self.params, 
+                paths=self.paths) for i, df in enumerate(parsed_data)]
             return parsed_data
 
     def runFindFixations(self, trial, use_dataframe=False):
@@ -273,46 +293,108 @@ class vrGazeCore:
         trial.set_fixations(trial_fixations)
 
         if self.params.plot_fixations:
+            out_dir = os.path.join(self.paths['project_fix_plots_dir'], trial.subject)
+
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
+            
             self.plotFixations(
                 df_fixations=trial.get_fixations(), 
                 image_path=trial.get_image_path(),
-                out_path=os.path.join(self.paths['project_fix_plots_dir'], f'{trial.name}_{str(trial.trial_number).zfill(5)}.jpg')
+                out_path=os.path.join(out_dir, f'{trial.subject}_{trial.trial_name}_{str(trial.trial_number).zfill(5)}.jpg')
             )
 
+        trial.write_data(out_dir=self.paths['project_fix_pkl_dir'])
         return trial
+
+    def loadGroupFixations(self, subjects):
+        # grab all filenames that are shared across subjects
+
+        data = []
+        all_stimuli = sorted(glob.glob(os.path.join(self.paths['project_stim_dir'], '*')))
+
+        for stim in all_stimuli:
+            stim_name = os.path.splitext(os.path.basename(stim))[0]
+
+            subject_fns = []
+            for subject in subjects:
+                subject_fn = glob.glob(os.path.join(self.paths['project_fix_pkl_dir'], subject, f'*{stim_name}*'))
+                if subject_fn:
+                    subject_fns.append(subject_fn[0])
+            if len(subject_fns) == len(subjects):
+                data.append([vrGazeData.load_data(fn)for fn in subject_fns])
+            # else:
+                # print (f'Subject fixations missing for {os.path.basename(stim)}')
+        # now load fixations
+        return data
+
+    def createGroupFixations(self, trials):
+        """
+        Given a list of data, create a trial for the group
+        """
+
+        # create a dummy trial for the group --> this will be used to save the data
+        trial_group = vrGazeData(
+            subject=f'group-{self.params.cohort_name}',
+            trial_name=trials[0].trial_name,
+            trial_number=None,
+            df=None,
+            params=self.params,
+            paths=self.paths,
+        )
+
+        df_fixations = pd.concat([t.get_fixations() for t in trials])
+        subject_list = [t.subject for t in trials]
+        
+        trial_group.set_fixations(df_fixations)
+        trial_group.set_subject_list(subject_list)
+        return trial_group
 
     def runHeatmapping(self, trial):
         """
         If trials is a list, then we concatenate the dataframes
         """
+        
 
         ## TLB --> GROUP HASN'T BEEN TESTED YET
         if isinstance(trial, list):
             # create an aggregated fixations list for the group
-            df_fixations = pd.concat([t.get_fixations() for t in trials])
-            image_path = trial[0].get_image_path()
-            out_fn = f'{trial[0].name}_{str(trial[0].trial_number).zfill(5)}'
-        else:
-            df_fixations = trial.get_fixations()
-            image_path = trial.get_image_path()
-            out_fn = f'{trial.name}_{str(trial.trial_number).zfill(5)}'
+            trial = self.createGroupFixations(trial)
+
+        df_fixations = trial.get_fixations()
+        image_path = trial.get_image_path()
 
         df_timesteps = self.splitFixationTimesteps(df_fixations)
+
+        if df_timesteps is None:
+            return
+
         density_maps = np.stack([self.createDensityMap(df) for df in df_timesteps])
+
+        trial.set_density_maps(density_maps)
+        trial.write_data(out_dir=self.paths['project_timecourse_pkl_dir'] if self.params.heatmap_timesteps > 1 else self.paths['project_heat_pkl_dir'])
+
+        ## TLB FIX --> TRIAL NUMBER IS NOT SET AT GROUP LEVEL
+        out_fn = f'{trial.subject}_{trial.trial_name}_{str(trial.trial_number).zfill(5)}'
 
         if self.params.plot_density_maps:
 
-            out_dir = self.paths['project_timecourse_plots_dir'] if len(density_maps) > 1 else self.paths['project_heat_plots_dir']
+            # create the output directory for the subject or group
+            out_dir = self.paths['project_timecourse_plots_dir'] if self.params.heatmap_timesteps > 1 else self.paths['project_heat_plots_dir']
+            out_dir = os.path.join(out_dir, trial.subject)
 
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
+            
             for i, density_map in enumerate(density_maps):
                 self.plotFixationDensity(
                     density_map=density_map, 
                     image_path=image_path,
                     out_path=os.path.join(out_dir, f'{out_fn}_step-{str(i+1).zfill(3)}.jpg') if len(density_maps) > 1 else os.path.join(out_dir, f'{out_fn}.jpg')
                 )
+        return trial
 
     def confidenceFilter(self, trial):
-
         """
 
         This function is used for filtering scene data by the confidence threshold. The default
@@ -598,6 +680,11 @@ class vrGazeCore:
         Splits a dataframe of fixations into chunks of non-overlapping time 
         based on a flag of how many chunks
         """
+
+        if not len(df_fixations):
+            print ('No fixations! Cannot split into timesteps.')
+            return None
+
         timestep_bounds = np.linspace(0, self.params.scene_length, self.params.heatmap_timesteps + 1);
 
         # calculate timestep indices as points when fixation falls between subsequent steps of bounds
@@ -605,7 +692,7 @@ class vrGazeCore:
             np.logical_and(
                 df_fixations['norm_start_time'] >= timestep_bounds[i], 
                 df_fixations['norm_start_time'] < timestep_bounds[i+1])
-        )[0].max() for i in range(len(timestep_bounds) -1)]
+        )[0].max() for i in range(len(timestep_bounds)-1)]
 
         timesteps = np.split(df_fixations, np.array(timestep_indices) + 1)[:-1]
         return timesteps
@@ -614,7 +701,7 @@ class vrGazeCore:
     
         # map location of fixations to equirectangular space
         x_pix, y_pix = degrees_to_pixels(df_fixations['fix_yaw'], df_fixations['fix_pitch'], self.params.plotting_image_width, self.params.plotting_image_height)
-        
+
         # normalize durations and trim outliers
         durations = scale_durations(df_fixations['duration'], bound_filtering=self.params.bound_filtering)
         
@@ -624,15 +711,26 @@ class vrGazeCore:
         # set points in the image as fixation durations
         for i, (col, row) in enumerate(zip(x_pix, y_pix)):
             density_map[row, col] += durations.iloc[i]
-        
+
+        # pad the image --> to account for wraparound, we append the right edge onto to
+        # the left part of the image, and the left edge to the right part of the image
+        density_map = np.hstack((
+            density_map[:,-self.params.plotting_image_width//4:], # right edge
+            density_map, 
+            density_map[:, :self.params.plotting_image_width//4], # left edge
+        ))
+
         # apply variable width smoothing over pitch (axis=0), but regular gaussian over columns
         density_map = apply_gaussian_smoothing(density_map, axis=0, variable_width=True)
         density_map = apply_gaussian_smoothing(density_map, axis=1, variable_width=False)
+
+        # unpad image
+        density_map = density_map[:, self.params.plotting_image_width//4:-self.params.plotting_image_width//4]
             
-        return density_map 
+        return density_map
 
     def plotFixationDensity(self, density_map, image_path, alpha=0.6, out_path=None, fig_size=(20,10)):
-
+        
         if image_path is None:
             print(f'No image path provided!')
             return 
