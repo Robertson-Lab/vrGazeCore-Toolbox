@@ -1,7 +1,7 @@
 eyeTrackLogs/
 
 eyeTrackResults/
-
+.DS_Store
 *.csv
 *.txt
 *.jpg
