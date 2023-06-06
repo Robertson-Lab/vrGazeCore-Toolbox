@@ -10,7 +10,7 @@ scriptVersion = '0.1.5'; % don't change unless updating version
 %% Need to Adjust Parameters
 
     % Processing Options
-    runFindFix = 0; % if 1, runs find fixations for all individuals
+    runFindFix = 1; % if 1, runs find fixations for all individuals
     runHeatmappingIndivid = 1; % if 1, run individual heatmapping for each subject
     runHeatmappingGroup = 1; % if 1, run group heatmapping for the cohort
     runTimecourseGifIndivid = 0; % if 1, make individual heatmapping timecourse gifs for each subject
@@ -134,7 +134,7 @@ scriptVersion = '0.1.5'; % don't change unless updating version
         plotCombinedGazeFlag = 0; % Default 1; plot combined head, gaze, fix points on image
         plotHeadRawFlag = 0; % Default 0; plot the raw HMD direction center point on image
         plotGazeRawFlag = 0; % Default 0; plot the raw gaze points on image
-        plotFixFlag = 1; % Default 1; plot the fixations on image
+        plotFixFlag = 0; % Default 1; plot the fixations on image
         plotMADFlag = 0; % Default 1; plot viewport position & MAD for each trial over time
     % Heatmap Options
         trimFactor = 0; % if zero, don't trim, else trim top and bottom by trim factor

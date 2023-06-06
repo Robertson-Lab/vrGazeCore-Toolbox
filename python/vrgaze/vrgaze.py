@@ -1,6 +1,6 @@
 import os
 import glob
-import dill, pickle
+import pickle
 import pandas as pd
 import numpy as np
 from datetime import datetime as dt
@@ -9,7 +9,7 @@ import cv2
 from matplotlib import pyplot as plt
 
 from sklearn.metrics.pairwise import haversine_distances
-from utils import sliding_window_mad, get_fixation_indices, sphere_centroid, calculate_fixation_centroids, concatenate_fixations, degrees_to_pixels, scale_durations, apply_gaussian_smoothing
+from vrgaze.utils import sliding_window_mad, get_fixation_indices, sphere_centroid, calculate_fixation_centroids, concatenate_fixations, degrees_to_pixels, scale_durations, apply_gaussian_smoothing
 
 class vrGazeData(object):
     
