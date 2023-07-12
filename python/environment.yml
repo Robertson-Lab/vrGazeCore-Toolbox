@@ -13,4 +13,5 @@ dependencies:
   - opencv
   - seaborn
   - dill
+  - PIL
 prefix: /Users/thomasbotch/opt/miniconda3/envs/vrgaze
