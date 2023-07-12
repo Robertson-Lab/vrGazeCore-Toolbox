@@ -14,8 +14,8 @@ def get_args_parser():
 	parser.add_argument('--run_find_fix', action='store_true', default=False, help="Run find fixations for all individuals")
 	parser.add_argument('--run_heatmapping_individ', action='store_true', default=False, help="Run individual heatmapping for each subject")
 	parser.add_argument('--run_heatmapping_group', action='store_true', default=False, help="Run group heatmapping for the cohort")
-	parser.add_argument('--run_timecourse_gif_individ', action='store_true', default=False, help="Make individual heatmapping timecourse gifs for each subject")
-	parser.add_argument('--run_timecourse_gif_group', action='store_true', default=False, help="Make individual heatmapping timecourse gifs for each subject")
+	# parser.add_argument('--run_timecourse_gif_individ', action='store_true', default=False, help="Make individual heatmapping timecourse gifs for each subject")
+	# parser.add_argument('--run_timecourse_gif_group', action='store_true', default=False, help="Make individual heatmapping timecourse gifs for each subject")
 
 	# Headset Type
 	parser.add_argument('--headset_type', type=int, default=0, choices=[0, 1, 2, 3], help="Headset type (0=DK2, 1=Vive, 2=Vive Eye, 3=Oculus Go)")
@@ -37,10 +37,10 @@ def get_args_parser():
 	parser.add_argument('--scanned_thresh', type=int, default=66, help="Percent threshold to exclude scenes not explored based on head direction")
 
 	# Manually Exclude Scenes
-	parser.add_argument('--exclude_scenes', type=str, nargs='+', default=[], help="List of scenes to exclude")
+	parser.add_argument('--exclude_scenes', type=list, nargs='+', default=[], help="List of scenes to exclude from all parts of analysis")
 
 	# Ignore List
-	parser.add_argument('--ignore_list', type=str, nargs='+', default=['fixate*'], help="List of scenes to ignore")
+	parser.add_argument('--pretrial_list', type=list, nargs='+', default=['sanityTarget'], help="List of pre-trial names; inapplicable for 'exclude_first_n_sec' and 'runHeatmapping'")
 
 	# Load Scenes
 	parser.add_argument('--scene_dir', type=str, default='path_to_scenes_directory', help="Directory containing scene files")
@@ -98,8 +98,10 @@ def get_args_parser():
 	### PLOTTING OPTIONS ###
 	parser.add_argument('--plot_fixations', action='store_true', default=False, help="Plot fixations on image")
 	parser.add_argument('--plot_density_maps', action='store_true', default=False, help="Plot heatmap of fixation density")
+	parser.add_argument('--make_density_map_gif',action='store_true',default=False,help="Make GIF of time-segmented density maps")
 	parser.add_argument('--plotting_image_width', type=float, default=2000, help="Default width of image")
 	parser.add_argument('--plotting_image_height', type=float, default=1000, help="Default height of image")
+	parser.add_argument('--gif_frame_duration', type=float, default = 250, help="Duration of each frame of GIF in ms")
 	parser.add_argument('--bound_filtering', action='store_true', default=True)
 	
 	return parser
@@ -122,9 +124,6 @@ def set_paths(args):
 	project_heat_dir = os.path.join(project_data_dir, 'heatMaps')
 	project_heat_pkl_dir = os.path.join(project_heat_dir, 'pkl')
 	project_heat_plots_dir = os.path.join(project_heat_dir, 'plots')
-	project_timecourse_dir = os.path.join(project_data_dir, 'timecourseHeat')
-	project_timecourse_pkl_dir = os.path.join(project_timecourse_dir, 'pkl')
-	project_timecourse_plots_dir = os.path.join(project_timecourse_dir, 'plots')
 
 	# Set meta and log folders
 	project_anal_logs_dir = os.path.join(args.project_dir, 'eyeTrackLogs')
@@ -157,9 +156,6 @@ def set_paths(args):
 		'project_heat_dir': project_heat_dir,
 		'project_heat_pkl_dir': project_heat_pkl_dir,
 		'project_heat_plots_dir': project_heat_plots_dir,
-		'project_timecourse_dir': project_timecourse_dir,
-		'project_timecourse_pkl_dir': project_timecourse_pkl_dir,
-		'project_timecourse_plots_dir': project_timecourse_plots_dir,
 		'project_anal_logs_dir': project_anal_logs_dir,
 		'project_meta_data_dir': project_meta_data_dir,
 		'project_logs_dir': project_logs_dir,
