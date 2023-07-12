@@ -237,6 +237,7 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
     end
     
     %%%%%%%%%% BILATERAL SMOOTHING ALA PETERSON 2016 %%%%%%%%
+    %DEPRICATED function: not actively maintained or tested & not available in Python version
     %using a bilateral filtering algorithm which eliminates jitter in
     %fixation while preserving saccades excludes samples where only one eye
     %is available data is converted into a single x and y position averaged
@@ -273,6 +274,7 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
     end
 
     %%%%%%%%%  INTERPOLATION  %%%%%%%%%%%%
+    % DEPRICATED function: not actively maintained or tested & not available in Python version
     % Written by TLB 2019
     
     if params.useInterpolation == 1        

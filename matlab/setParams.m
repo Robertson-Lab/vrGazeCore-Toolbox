@@ -20,12 +20,13 @@ scriptVersion = '0.1.5'; % don't change unless updating version
     headsetType = 0; %Default 0; DK2=0 Vive=1 ViveEye = 2, Oculus Go = 3 
 
     % Select Subjects
-    cohortName = 'cohortName'; % pick a cohort name. If doing group processing, this will be used to label your files
+    cohortName = 'testCohort'; % pick a cohort name. If doing group processing, this will be used to label your files
     listSubjectNames = 1; % if 1 list 
         
     if listSubjectNames == 1 % manually list subjects here
         subjectNames = string({
-            'furrow380_V1';
+            'furrow012_V1'; ...
+            'furrow380_V1'; ...
             'furrow381_V1';
         });    
     else % OR
@@ -97,9 +98,9 @@ scriptVersion = '0.1.5'; % don't change unless updating version
                             % new scene viewing it is in proportion to headset "fov" value so for dk2 it is now
                             % proportional to ~ 145x160 ? confusing
     % Smoothing
-        useSmoothing = 0; % default 0. if 1, use Matt's smoothing. Not exactly fully implemented at the moment but could be easily. [DP: figure out where smoothing is]
-        useInterpolation = 0; % default 0, if 1 use linear interpolation (Wass 2012) to recover data loss samples < 100ms 
-        durationForInterpolation = 0.10; %using 100ms
+        useSmoothing = 0; % default 0. if 1, use Matt's smoothing. DEPRICATED function: not actively maintained or tested & not available in Python version
+        useInterpolation = 0; % default 0, if 1 use linear interpolation (Wass 2012) to recover data loss samples < 100ms DEPRICATED function: not actively maintained or tested & not available in Python version
+        durationForInterpolation = 0.10; %using 100ms DEPRICATED function: not actively maintained or tested & not available in Python version
     % Fixation Calculation
         % based on Mean Absolute Deviation in degrees/sec
         fixType = 1; % type of fixation to calculate, 1 = gaze fixation, 2 = head fixation  

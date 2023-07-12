@@ -1,5 +1,5 @@
 function [time,gazeX_deg,gazeY_deg,gaze_ecc,confidence,gaze_pitch_sphere,gaze_yaw_sphere,validIdxs,removedIdxs]=interpolSamples(gaze_yaw_sphere,gaze_pitch_sphere,time, gazeX_deg, gazeY_deg, gaze_ecc, confidence, parDataScene, rawSceneData, paths,params)
-
+    % DEPRICATED function: not actively maintained or tested & not available in Python version
     validIdxs = [];
         
     %preserve the invalid samples (nans) as a reference array for
