@@ -142,17 +142,17 @@ def concatenate_fixations(df, spatial_distance, temporal_distance):
     return df
 
 def scale_durations(durations, bound_filtering=False):
-
+    norm_durations = durations.copy()
     if bound_filtering:
-        durations[durations > np.percentile(durations,95)] = np.percentile(durations,95)
-        durations[durations < np.percentile(durations,0.1)] = np.percentile(durations,0.1)
+        norm_durations[durations > np.percentile(durations,95)] = np.percentile(durations,95)
+        norm_durations[durations < np.percentile(durations,0.1)] = np.percentile(durations,0.1)
 
     # make sure all values aren't the same --> otherwise normalization produces nan
-    if len(set(durations)) > 1:
-        durations = (durations - min(durations)) / (max(durations) - min(durations))
-    durations = 0.1 + durations * 0.9
+    if len(set(norm_durations)) > 1:
+        norm_durations = (norm_durations - min(norm_durations)) / (max(norm_durations) - min(norm_durations))
+    norm_durations = 0.1 + norm_durations * 0.9
     
-    return durations
+    return norm_durations
 
 ### PLOTTING FUNCTIONS ####
 
