@@ -804,7 +804,7 @@ class vrGazeCore:
             
         return density_map
     
-    def plotFixationDensity(self, density_map, image_path, start_dur, end_dur, alpha=0.6, out_path=None, fig_size=(20,10)):
+    def plotFixationDensity(self, density_map, image_path, start_dur, end_dur, alpha=0.6, out_path=None, fig_size=(20,10), vmin = None, vmax = None):
         
         if image_path is None:
             print(f'No image path provided!')
@@ -820,10 +820,16 @@ class vrGazeCore:
         
         #overlay the heatmap on top of the panoramic image
 
+        # define colormap range
+        if vmin is None:
+            vmin = density_map.min()
+        if vmax is None:
+            vmax = density_map.max()  
+
         fig = plt.figure(figsize=fig_size)
         plt.axis('off')
         plt.imshow(res)
-        plt.imshow(density_map, alpha=alpha)
+        plt.imshow(density_map, alpha=alpha, vmin=vmin, vmax=vmax)
         
         plt.suptitle(image_name)
         plt.title(f'Duration: {start_dur} to {end_dur} seconds')
