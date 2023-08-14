@@ -3,12 +3,12 @@
 % This file sets paths to be passed to other scripts and adds dirs to your path.
 
 % Set Top Level Paths
-projectDir = '~/Documents/matGazeCore/';                       % point this to to your main project folder (one level above folders with stimuli, raw data, etc.)
-gazeCoreDir = [projectDir 'matlab/'];                       % point this to the vrGazeCore script directory 
+projectDir = 'projectDirectoryName/';                       % point this to to your main project folder (one level above folders with stimuli, raw data, etc.)
+gazeCoreDir = [projectDir 'vrGazeCore/'];                       % point this to the vrGazeCore script directory 
 
 % Set stimuli and data folder to use                    
-projectRawDataDir = [projectDir 'rawData/'];                    % Raw Data
-projectStimDir = [ projectDir 'stimuli/combined/' ];            % Project stimuli to process
+projectRawDataDir = [projectDir 'rawDataFolderName/'];                    % Raw Data
+projectStimDir = [ projectDir 'stimuliFolderName/'];            % Project stimuli to process
 
 %% Based on the top-level folders, populate path name variables:
 % Set analysis results folders
