@@ -275,13 +275,31 @@ class vrGazeCore:
                 paths=self.paths) for i, df in enumerate(parsed_data)]
             return parsed_data
 
-    def parsedDataKey(self, parsed_data):
-        parsed_data_key = pd.DataFrame({
-            'parsed_data_idx': [i for i in range(len(parsed_data))],
-            'trial_name': [trial.trial_name for trial in parsed_data],
-            'trial_number': [trial.trial_number for trial in parsed_data]
-        })
-        
+    def parsed_data_key(self, parsed_data):
+        parsed_data_key = pd.DataFrame()
+        scene_idx = 0
+
+        for scene in parsed_data:
+            if hasattr(scene, '__iter__'):
+                scene_data_key = pd.DataFrame({
+                    'scene_idx': scene_idx,
+                    'subject_idx': [idx for idx, trial in enumerate(scene)],
+                    'subject': [trial.subject for trial in scene],
+                    'trial_name': [trial.trial_name for trial in scene],
+                    'trial_number': [trial.trial_number for trial in scene]
+                })
+                parsed_data_key = pd.concat([parsed_data_key, scene_data_key], ignore_index=True)
+                scene_idx += 1
+            else:
+                parsed_data_key = pd.concat([parsed_data_key] + [
+                    pd.DataFrame({
+                        'scene_idx': i,
+                        'subject': trial.subject,
+                        'trial_name': trial.trial_name,
+                        'trial_number': trial.trial_number
+                    }, index=[0]) for i, trial in enumerate(parsed_data)
+                ], ignore_index=True)
+
         return parsed_data_key
     
     def runFindFixations(self, trial, use_dataframe=False):
