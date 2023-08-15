@@ -8,7 +8,7 @@ gazeCoreDir = [projectDir 'vrGazeCore/'];                       % point this to 
 
 % Set stimuli and data folder to use                    
 projectRawDataDir = [projectDir 'rawDataFolderName/'];                    % Raw Data
-projectStimDir = [ projectDir 'stimuliFolderName/' ];            % Project stimuli to process
+projectStimDir = [ projectDir 'stimuliFolderName/'];            % Project stimuli to process
 
 %% Based on the top-level folders, populate path name variables:
 % Set analysis results folders

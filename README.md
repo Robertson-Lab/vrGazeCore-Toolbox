@@ -2,7 +2,7 @@
 
 Still in development, use at your own discretion!
 
-vrGazeCore is a MATLAB toolbox that processes raw eye-tracking data from head mounted virtual reality displays and does basic gaze analysis, including determining fixations and creating fixation density maps.
+vrGazeCore is a toolbox that processes raw eye-tracking data from head mounted virtual reality displays and does basic gaze analysis, including determining fixations and creating fixation density maps. It is available in both MATLAB and Python.
 
 This README will be a simple overview of the dependencies needed to run vrGazeCore, the results it outputs, the parameters that can be adjusted by the end user, and the scripts contained.
 

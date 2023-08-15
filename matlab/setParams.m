@@ -15,17 +15,19 @@ scriptVersion = '0.1.5'; % don't change unless updating version
     runHeatmappingGroup = 1; % if 1, run group heatmapping for the cohort
     runTimecourseGifIndivid = 0; % if 1, make individual heatmapping timecourse gifs for each subject
     runTimecourseGifGroup = 0; % if 1, make individual heatmapping timecourse gifs for each subject
-
+    
     % Headset Type
     headsetType = 0; %Default 0; DK2=0 Vive=1 ViveEye = 2, Oculus Go = 3 
 
     % Select Subjects
-    cohortName = 'cohortName'; % pick a cohort name. If doing group processing, this will be used to label your files
-    listSubjectNames = 0; % if 1 list 
+    cohortName = 'testCohort'; % pick a cohort name. If doing group processing, this will be used to label your files
+    listSubjectNames = 1; % if 1 list 
         
     if listSubjectNames == 1 % manually list subjects here
         subjectNames = string({
-            'subject1';
+            'furrow012_V1'; ...
+            'furrow380_V1'; ...
+            'furrow381_V1';
         });    
     else % OR
         %%%% Run All Subjects in a specified raw Data Dir 
@@ -96,9 +98,9 @@ scriptVersion = '0.1.5'; % don't change unless updating version
                             % new scene viewing it is in proportion to headset "fov" value so for dk2 it is now
                             % proportional to ~ 145x160 ? confusing
     % Smoothing
-        useSmoothing = 0; % default 0. if 1, use Matt's smoothing. Not exactly fully implemented at the moment but could be easily. [DP: figure out where smoothing is]
-        useInterpolation = 0; % default 0, if 1 use linear interpolation (Wass 2012) to recover data loss samples < 100ms 
-        durationForInterpolation = 0.10; %using 100ms
+        useSmoothing = 0; % default 0. if 1, use Matt's smoothing. DEPRICATED function: not actively maintained or tested & not available in Python version
+        useInterpolation = 0; % default 0, if 1 use linear interpolation (Wass 2012) to recover data loss samples < 100ms DEPRICATED function: not actively maintained or tested & not available in Python version
+        durationForInterpolation = 0.10; %using 100ms DEPRICATED function: not actively maintained or tested & not available in Python version
     % Fixation Calculation
         % based on Mean Absolute Deviation in degrees/sec
         fixType = 1; % type of fixation to calculate, 1 = gaze fixation, 2 = head fixation  
@@ -133,7 +135,7 @@ scriptVersion = '0.1.5'; % don't change unless updating version
         plotCombinedGazeFlag = 0; % Default 1; plot combined head, gaze, fix points on image
         plotHeadRawFlag = 0; % Default 0; plot the raw HMD direction center point on image
         plotGazeRawFlag = 0; % Default 0; plot the raw gaze points on image
-        plotFixFlag = 1; % Default 1; plot the fixations on image
+        plotFixFlag = 0; % Default 1; plot the fixations on image
         plotMADFlag = 0; % Default 1; plot viewport position & MAD for each trial over time
     % Heatmap Options
         trimFactor = 0; % if zero, don't trim, else trim top and bottom by trim factor

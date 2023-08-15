@@ -8,16 +8,23 @@ function [point_spread] = pointSpread(yaw_new,pitch_new,mean_yaw,mean_pitch,begi
 
 %out: 'spread' of each fixation mean arc distance from centroid
 
+yaw_new = yaw_new - 180;
+pitch_new = pitch_new - 90;
+mean_yaw = mean_yaw - 180;
+mean_pitch = mean_pitch - 90;
+
 for i = 1:length(begin_fix)
     
-    x_raws = yaw_new(begin_fix(i):begin_fix(i)+length_fix(i));
-    y_raws = pitch_new(begin_fix(i):begin_fix(i)+length_fix(i));
+    x_raws = yaw_new(begin_fix(i):begin_fix(i)+length_fix(i)-1);
+    y_raws = pitch_new(begin_fix(i):begin_fix(i)+length_fix(i)-1);
     x_fix = mean_yaw(i);
     y_fix = mean_pitch(i);
     
-    
     for d = 1:length(x_raws)
-        [distances(d),az] = distance(x_fix,y_fix,x_raws(d),y_raws(d));
+
+        % TLB - 6/4/23 --> changing argument order to correct order
+        [distances(d),az] = distance(y_fix, x_fix, y_raws(d), x_raws(d));
+%         [distances(d),az] = distance(x_fix,y_fix,x_raws(d),y_raws(d));
         
     end
     

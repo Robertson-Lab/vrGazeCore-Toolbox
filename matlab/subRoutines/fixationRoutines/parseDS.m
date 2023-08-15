@@ -79,5 +79,9 @@ function [time,pitch,yaw,roll_rad,gazeX_deg,gazeY_deg,gaze_ecc,confidence] = par
     end
     
 	% CALCULATE GAZE ECCENTRICITY (D) [Distance from 0,0 (degrees)]
-    [gaze_ecc,~] = distance(0,0,gazeX_deg,gazeY_deg); %how eccentric gaze was from the viewport at a given point
+
+    % TLB - 6/4/23 --> changing argument order to correct order
+    [gaze_ecc,~] = distance(0,0,gazeY_deg, gazeX_deg); %how eccentric gaze was from the viewport at a given point
+
+%     [gaze_ecc,~] = distance(0,0, gazeX_deg, gazeY_deg); %how eccentric gaze was from the viewport at a given point
 end

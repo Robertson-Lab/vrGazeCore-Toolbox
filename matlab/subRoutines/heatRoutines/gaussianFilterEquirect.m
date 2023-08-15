@@ -11,15 +11,17 @@ function [imgOut] = gaussianFilterEquirect(imgIn,baseGaussWidth)
 imageW = size(imgIn,2);
 imageH = size(imgIn,1);
 
+% imgIn = zeros(imageH, imageW);
+% imgIn(950, 1900) = 1;
+% imgIn(50, 100) = 1;
+% imgIn(500, 1000) = 1;
 
 %% Pad & smooth the image - Horizontal steps: pad, variable width gaussian
 % pad BOTH L/R here (no need to reflect for the horizontal step)
 imgIn = [imgIn(:,1+(3*imageW/4):end) imgIn imgIn(:,1:(imageW/4))];
 
-
 %make copy of img that is flipped
 imgRowRev = fliplr(imgIn);
-
 
 %loop through rows of original
 for i = 1:imageH
@@ -31,8 +33,10 @@ for i = 1:imageH
     if variableGaussWidth == inf
         variableGaussWidth = 1000000;
     end
+
     w = gausswin(variableGaussWidth); %get gaussianwindow
     w = w(round(length(w)/2):end); % get half of the gaussian window
+
     imgIn(i,:) = filter(w,1,imgIn(i,:)); % filter each row
 end
 
@@ -53,7 +57,6 @@ end
 imgRowRev = [ zeros(imageH,1) imgRowRev]; % since they overlap by one column, trim one of the columns
 imgRowRev(:,end) = []; % add an extra to the other side so the matrices are the same size
 imgRowRev = fliplr( imgRowRev); % flip it back
-
 
 imgOut = imgIn + imgRowRev; % add them together
 

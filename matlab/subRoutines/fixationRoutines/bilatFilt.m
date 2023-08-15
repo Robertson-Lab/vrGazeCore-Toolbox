@@ -1,5 +1,5 @@
 function [J,v,a,n]=bilatFilt(x,y,t,nr,ss,sr,di)
-%
+% DEPRICATED function: not actively maintained or tested & not available in Python version
 %[J, v, a, n] = bilatFilt(x, y, t, nr, ss, sr, di)
 %Applies a bilateral filter to a time series of gaze coordinates
 %

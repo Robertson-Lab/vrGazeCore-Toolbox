@@ -237,6 +237,7 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
     end
     
     %%%%%%%%%% BILATERAL SMOOTHING ALA PETERSON 2016 %%%%%%%%
+    %DEPRICATED function: not actively maintained or tested & not available in Python version
     %using a bilateral filtering algorithm which eliminates jitter in
     %fixation while preserving saccades excludes samples where only one eye
     %is available data is converted into a single x and y position averaged
@@ -273,6 +274,7 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
     end
 
     %%%%%%%%%  INTERPOLATION  %%%%%%%%%%%%
+    % DEPRICATED function: not actively maintained or tested & not available in Python version
     % Written by TLB 2019
     
     if params.useInterpolation == 1        
@@ -337,8 +339,11 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
                     currSampleX = mean(preFixX(point:currEnd));
                     currSampleY = mean(preFixY(point:currEnd));
                     alignTime(point) = preTime(point);
-                    [fixShift(point), foo] = distance(currSampleX, currSampleY, 0, 0); 
-                    
+
+                    % TLB - 6/4/23 --> changing argument order to correct order
+                    [fixShift(point), foo] = distance(currSampleY, currSampleX, 0, 0); 
+%                     [fixShift(point), foo] = distance(currSampleX, currSampleY, 0, 0); 
+
                     %adding to shift points on 2d screen space
                     fixShiftX(point) = currSampleX;
                     fixShiftY(point) = currSampleY;
@@ -351,8 +356,9 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
             fixShiftX = mean(fixShiftX(startIdx:end));
             fixShiftY = mean(fixShiftY(startIdx:end));
             
-            
-            fixShift = distance(fixShiftX, fixShiftY, 0, 0);
+            % TLB - 6/4/23 --> changing argument order to correct order
+            fixShift = distance(fixShiftY, fixShiftX, 0, 0);
+%             fixShift = distance(fixShiftX, fixShiftY, 0, 0);
             
             if params.gazeType == 1 %distance is already in dva
                 fixShift = fixShift;
@@ -381,7 +387,10 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
                 meanHeadYaw = mean( yaw(end-250:end) ) - 180;
                 meanHeadPitchList(preFixCount,1) = meanHeadPitch;
                 meanHeadYawList(preFixCount,1) = meanHeadYaw;
-                [headShiftList(preFixCount,1), foo] = distance(meanHeadYaw, meanHeadPitch, params.avgPreTrialX, params.avgPreTrialY); 
+
+                % TLB - 6/4/23 --> changing argument order to correct order
+                [headShiftList(preFixCount,1), foo] = distance(meanHeadPitch, meanHeadYaw, params.avgPreTrialY, params.avgPreTrialX); 
+%                 [headShiftList(preFixCount,1), foo] = distance(meanHeadYaw, meanHeadPitch, params.avgPreTrialX, params.avgPreTrialY); 
             else
                 meanHeadPitch = nan;
                 meanHeadYaw = nan;
@@ -396,7 +405,10 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
                 meanGazeYaw = mean( gaze_yaw_sphere(end-250:end) ) - 180;
                 meanGazePitchList(preFixCount,1) = meanGazePitch;
                 meanGazeYawList(preFixCount,1) = meanGazeYaw;
-                [gazeShiftList(preFixCount,1), foo] = distance(meanGazeYaw, meanGazePitch, params.avgPreTrialX, params.avgPreTrialY); 
+
+                % TLB - 6/4/23 --> changing argument order to correct order
+                [gazeShiftList(preFixCount,1), foo] = distance(meanGazePitch, meanGazeYaw, params.avgPreTrialY, params.avgPreTrialX); 
+%                 [gazeShiftList(preFixCount,1), foo] = distance(meanGazeYaw, meanGazePitch, params.avgPreTrialX, params.avgPreTrialY); 
             else
                 meanGazePitch = nan;
                 meanGazeYaw = nan;
@@ -423,6 +435,7 @@ for s=1:length(sceneChangeList)-1 %loop through scenes
     else
         imFile = '';
     end
+
     if exist(imFile) % if the image file exists plot things on it
         myIm = imread(imFile); % load image as matrix
         resizeIM = imresize(myIm,[params.imDimY,params.imDimX]);

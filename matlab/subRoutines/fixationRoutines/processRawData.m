@@ -127,12 +127,12 @@ end
 %%  Set how the scene change points are calculated based on the unity project version
 
    
-    if find(scenechange==0) > 1
-        sceneChangeList = [find(scenechange==0) length(sceneNames)];%find indices where a scene changes, add 1 to beginning since that is the first scene
-        
-    else
-        sceneChangeList = [1 find(scenechange==0) length(sceneNames)];%find indices where a scene changes, add 1 to beginning since that is the first scene
-    end
+%     if find(scenechange==0) > 1
+%         sceneChangeList = [find(scenechange==0) length(sceneNames)];%find indices where a scene changes, add 1 to beginning since that is the first scene
+%         
+%     else
+sceneChangeList = [1 find(scenechange==0) length(sceneNames)];%find indices where a scene changes, add 1 to beginning since that is the first scene
+%     end
 
 end
 
