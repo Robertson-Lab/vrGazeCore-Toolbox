@@ -2,6 +2,10 @@
 
 Still in development, use at your own discretion!
 
+When using the toolbox, please cite our [CCN Abstract](https://2023.ccneuro.org/view_paper.php?PaperNum=1555).
+
+vrGazeCore was authored by Deepasri Prasad, Amanda J. Haskins, Thomas L. Botch, Jeff Mentch, and Caroline E. Robertson.
+
 vrGazeCore is a toolbox that processes raw eye-tracking data from head mounted virtual reality displays and does basic gaze analysis, including determining fixations and creating fixation density maps. It is available in both MATLAB and Python.
 
 This README will be a simple overview of the dependencies needed to run vrGazeCore, the results it outputs, the parameters that can be adjusted by the end user, and the scripts contained.
