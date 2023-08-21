@@ -2,7 +2,7 @@
 
 Still in development, use at your own discretion!
 
-When using the toolbox, please cite our [CCN Abstract](https://2023.ccneuro.org/view_paper.php?PaperNum=1555).
+When using the toolbox, please cite our [CCN paper](https://2023.ccneuro.org/view_paper.php?PaperNum=1555).
 
 vrGazeCore was authored by Deepasri Prasad, Amanda J. Haskins, Thomas L. Botch, Jeff Mentch, and Caroline E. Robertson.
 
